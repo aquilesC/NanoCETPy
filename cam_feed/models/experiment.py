@@ -18,6 +18,8 @@ from experimentor.models.decorators import make_async_thread
 
 
 class AlignmentSetup(Experiment):
+    """ Setup for testing the alignment procedure using both cameras and the electronics
+    """
     # What is Signal() for? 
 
     def __init__(self, filename=None):
@@ -63,6 +65,14 @@ class AlignmentSetup(Experiment):
     
     @make_async_thread
     def start_alignment(self):
+        """ Wraps the whole alignment procedure from focussing to aligning.
+        Run in an async thread as it calls other Actions
+
+        Args:
+            None
+        Returns:
+            None
+        """
         self.logger.info('TEST Starting Laser Alignment')
 
         # For testing purposes
@@ -119,6 +129,15 @@ class AlignmentSetup(Experiment):
         self.logger.info('TEST Alignment done')
 
     def find_focus(self):
+        """ Finding the focus with turned on laser by minimizing area of laser reflection.
+        Idea: Laser beam and thus reflection have gaussian intensity profile. The lower the spread the less pixel values are above a certain arbitrary percentile
+        Procedure: Check number of pixels above percentile and compare to previous measurement. If increasing, change direction and reduce speed. Stop at a certain minimum speed.
+        
+        Args: 
+            None
+        Returns: 
+            None
+        """
         self.logger.info('TEST start finding focus')
         direction = 0
         speed = 50
@@ -139,6 +158,14 @@ class AlignmentSetup(Experiment):
             if speed == 20: return
     
     def align_laser(self, fiber_center):
+        """ Aligns the focussed laser beam to the previously detected center of the fiber.
+        TODO: find suitable way to detect laser beam center
+
+        Args:
+            fiber_center: array or tuple of shape (2,)
+        Returns:
+            None
+        """
         assert len(fiber_center) == 2
         axis = self.config['electronics']['vertical_axis']
         for idx, c in enumerate(fiber_center):
@@ -230,7 +257,6 @@ class AlignmentSetup(Experiment):
     def test_changes(self):
         """Changes camera settings every second an calls a processing function
         """
-
         self.logger.info('TEST Test Changes')
         for i in range(11):
             if i%2 == 0: update_settings = self.config['laser_focusing']['low']
@@ -260,6 +286,9 @@ class AlignmentSetup(Experiment):
 
 
 class CamSetup(Experiment):
+    """ Minimal setup for a Basler camera.
+    Live view and Snap image possible.
+    """
     # What is Signal() for? 
 
     def __init__(self, filename=None):

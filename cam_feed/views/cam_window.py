@@ -16,6 +16,11 @@ from experimentor.views.camera.camera_viewer_widget import CameraViewerWidget
 logger = get_logger(__name__)
 
 class AlignmentWindow(QMainWindow, BaseView):
+    """ Window for testing the alignment procedure. 
+    Left display for camera image, right one for observing the current processing underlyig the algorithm.
+    Button to start the procedure and further controls for interim troubleshooting.
+    CAUTION: always stop live acquisition before triggering alignment!
+    """
     def __init__(self, experiment):
         super(AlignmentWindow, self).__init__()
         uic.loadUi(os.path.join(BASE_DIR_VIEW, 'Alignment_Window.ui'), self)
@@ -50,17 +55,11 @@ class AlignmentWindow(QMainWindow, BaseView):
         self.update_processed_image_timer.start(200)
 
     def update_image(self):
-        #t0 = time.perf_counter()
         img = self.experiment.get_latest_image()
         if np.sum(img) == None: 
             img = np.zeros((800,800))
             img[100:700,100:700] += np.ones((600,600))
         self.camera_viewer.update_image(img)
-        #t1 = time.perf_counter() - t0
-        #self.updating_times = np.roll(self.updating_times, 1)
-        #self.updating_times[0] = t1
-        #self.status_bar.showMessage(f'{np.mean(self.updating_times)*1000}ms')
-        #self.last_update = time.time()
 
     def update_processed_image(self):
         img = self.experiment.get_processed_image()
@@ -86,6 +85,8 @@ class AlignmentWindow(QMainWindow, BaseView):
 
 
 class CamWindow(QMainWindow, BaseView):
+    """ Window to start and stop live view and snap single image from camera
+    """
     def __init__(self, experiment):
         super(CamWindow, self).__init__()
         uic.loadUi(os.path.join(BASE_DIR_VIEW, 'Cam_Window.ui'), self)
@@ -111,17 +112,13 @@ class CamWindow(QMainWindow, BaseView):
         self.update_image_timer.start(50)
 
     def update_image(self):
-        #t0 = time.perf_counter()
+        """ gets latest camera image and raturns a test image if camera image is None
+        """
         img = self.experiment.get_latest_image()
         if np.sum(img) == None: 
             img = np.zeros((800,800))
             img[100:700,100:700] += np.ones((600,600))
         self.camera_viewer.update_image(img)
-        #t1 = time.perf_counter() - t0
-        #self.updating_times = np.roll(self.updating_times, 1)
-        #self.updating_times[0] = t1
-        #self.status_bar.showMessage(f'{np.mean(self.updating_times)*1000}ms')
-        #self.last_update = time.time()
     
     def update_camera(self):
         """ Updates the properties of the camera. """
