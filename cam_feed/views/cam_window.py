@@ -35,6 +35,8 @@ class AlignmentWindow(QMainWindow, BaseView):
 
         self.connect_to_action(self.start_button.clicked, self.experiment.start_alignment)
         self.connect_to_action(self.live_button.clicked, lambda: self.experiment.toggle_live(self.experiment.camera_fiber))
+        self.connect_to_action(self.laser_button.clicked, self.experiment.toggle_laser)
+        self.laser_process_button.clicked.connect(self.experiment.process_laser)
         self.up_button.clicked.connect(lambda: self.move_piezo(5,1,self.experiment.config['electronics']['vertical_axis']))
         self.down_button.clicked.connect(lambda: self.move_piezo(5,0,self.experiment.config['electronics']['vertical_axis']))
         self.left_button.clicked.connect(lambda: self.move_piezo(5,1,self.experiment.config['electronics']['horizontal_axis']))

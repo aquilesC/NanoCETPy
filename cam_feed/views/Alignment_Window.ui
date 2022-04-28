@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1453</width>
-    <height>769</height>
+    <height>800</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -38,7 +38,7 @@
      </rect>
     </property>
     <property name="text">
-     <string>Start</string>
+     <string>Start Alignment</string>
     </property>
    </widget>
    <widget class="QWidget" name="processing_widget" native="true">
@@ -141,6 +141,32 @@
     </property>
     <property name="text">
      <string/>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="laser_button">
+    <property name="geometry">
+     <rect>
+      <x>290</x>
+      <y>710</y>
+      <width>93</width>
+      <height>28</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>laser</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="laser_process_button">
+    <property name="geometry">
+     <rect>
+      <x>990</x>
+      <y>690</y>
+      <width>93</width>
+      <height>28</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>process_laser</string>
     </property>
    </widget>
   </widget>

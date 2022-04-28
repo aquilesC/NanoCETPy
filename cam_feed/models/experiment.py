@@ -111,7 +111,7 @@ class AlignmentSetup(Experiment):
         #fiber_center = [454, 174] # for testing
         self.logger.info(f'TEST fiber center is {fiber_center}')
         self.processed_image = np.zeros((fiber.shape[0],fiber.shape[1],3))
-        self.processed_image[:,:,1] = ut.to_uint8(fiber)
+        self.processed_image[:,:,2] = ut.to_uint8(fiber)
         self.processed_image[:,:,0]= ut.to_uint8(ut.gaussian2d_array(fiber_center,40,fiber.shape))
         time.sleep(10)
         # Turn off LED
@@ -120,6 +120,7 @@ class AlignmentSetup(Experiment):
         self.update_camera(self.camera_fiber, self.config['laser_focusing']['low'])
         # Turn on Laser
         self.set_laser_power(1)
+        time.sleep(2)
         # Find alignment function
             # WHILE not aligned:
                 # find center to center distance 
@@ -167,9 +168,9 @@ class AlignmentSetup(Experiment):
             None
         """
         assert len(fiber_center) == 2
-        axis = self.config['electronics']['vertical_axis']
+        axis = self.config['electronics']['horizontal_axis']
         for idx, c in enumerate(fiber_center):
-            self.logger.info(f'TEST start aligning axis {axis}')
+            self.logger.info(f'TEST start aligning axis {axis} at index {idx}')
             direction = 0
             speed = 1
             img = self.camera_fiber.temp_image
@@ -177,9 +178,9 @@ class AlignmentSetup(Experiment):
             mask = mask > 0.66*np.max(mask)
             img = img * mask
             img = 1*(img>0.8*np.max(img))
-            self.processed_image[:,:,1] = ut.to_uint8((1*mask))
+            self.processed_image[:,:,2] = ut.to_uint8((1*mask))
             lc = ut.centroid(img)
-            self.processed_image[:,:,2] = ut.to_uint8(ut.gaussian2d_array(lc,200,img.shape))
+            self.processed_image[:,:,1] = ut.to_uint8(ut.gaussian2d_array(lc,60,img.shape))
             val_new = lc[idx]-c
             while True:
                 val_old = val_new
@@ -187,16 +188,29 @@ class AlignmentSetup(Experiment):
                 elif val_new < 0: direction = 1
                 self.logger.info(f'TEST moving with speed {speed} in direction {direction}')
                 self.electronics.move_piezo(speed,direction,axis)
-                time.sleep(1)
+                time.sleep(.1)
                 img = self.camera_fiber.temp_image
                 img = img * mask
                 img = 1*(img>0.8*np.max(img))
                 lc = ut.centroid(img)
-                self.processed_image[:,:,2] = ut.to_uint8(ut.gaussian2d_array(lc,200,img.shape))
+                self.processed_image[:,:,1] = ut.to_uint8(ut.gaussian2d_array(lc,60,img.shape))
                 val_new = lc[idx]-c
-                self.logger.info(f'TEST last distances are {val_old}, {val_new}')
+                self.logger.info(f'TEST last distances are {val_old}, {val_new} to centroid at {lc}')
                 if np.sign(val_old) != np.sign(val_new): break
-            axis = self.config['electronics']['horizontal_axis']
+            axis = self.config['electronics']['vertical_axis']
+    
+    def process_laser(self):
+        img = self.camera_fiber.temp_image
+        self.processed_image = np.zeros((img.shape[0],img.shape[1],3))
+        mask = ut.gaussian2d_array([454, 174],19000,img.shape)
+        mask = mask > 0.66*np.max(mask)
+        img = img * mask
+        img = 1*(img>0.8*np.max(img))
+        self.processed_image[:,:,2] = ut.to_uint8((1*mask)) #+ ut.to_uint8(ut.gaussian2d_array((100,600),1000,img.shape))
+        lc = ut.centroid(img)
+        tc = ut.centroid(ut.to_uint8(ut.gaussian2d_array((100,600),1000,img.shape)))
+        self.processed_image[:,:,1] = ut.to_uint8(ut.gaussian2d_array(lc,60,img.shape))
+        self.logger.info(f'TEST centroid of laser at {lc}, test centroid at {tc}')
 
     @Action
     def snap_image(self, camera):
@@ -243,6 +257,13 @@ class AlignmentSetup(Experiment):
 
         self.electronics.scattering_laser = power
         self.config['laser']['power'] = power
+
+    @Action
+    def toggle_laser(self):
+        if self.electronics.scattering_laser == 0:
+            self.electronics.scattering_laser = 1
+            self.update_camera(self.camera_fiber, self.config['laser_focusing']['low'])
+        else: self.electronics.scattering_laser = 0
 
     def get_latest_image(self):
         if self.display_camera: 
