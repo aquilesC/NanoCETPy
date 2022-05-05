@@ -10,6 +10,8 @@ myenv
 *.pyc
 *.BAT
 *.sh
+*.tiff
+recorded/
 .idea
 build/
 dist/

@@ -35,14 +35,17 @@ class AlignmentWindow(QMainWindow, BaseView):
 
         self.connect_to_action(self.start_button.clicked, self.experiment.start_alignment)
         self.connect_to_action(self.live_button.clicked, lambda: self.experiment.toggle_live(self.experiment.camera_fiber))
+        self.connect_to_action(self.live_button_2.clicked, lambda: self.experiment.toggle_live(self.experiment.camera_microscope))
         self.connect_to_action(self.laser_button.clicked, self.experiment.toggle_laser)
+        self.stop_button.clicked.connect(self.experiment.toggle_active)
+        self.linesave_button.clicked.connect(self.experiment.save_image)
         self.laser_process_button.clicked.connect(self.experiment.process_laser)
-        self.up_button.clicked.connect(lambda: self.move_piezo(5,1,self.experiment.config['electronics']['vertical_axis']))
-        self.down_button.clicked.connect(lambda: self.move_piezo(5,0,self.experiment.config['electronics']['vertical_axis']))
-        self.left_button.clicked.connect(lambda: self.move_piezo(5,1,self.experiment.config['electronics']['horizontal_axis']))
-        self.right_button.clicked.connect(lambda: self.move_piezo(5,0,self.experiment.config['electronics']['horizontal_axis']))
-        self.plus_button.clicked.connect(lambda: self.move_piezo(5,1,3))
-        self.minus_button.clicked.connect(lambda: self.move_piezo(5,0,3))
+        self.up_button.clicked.connect(lambda: self.move_piezo(1,1,self.experiment.config['electronics']['vertical_axis']))
+        self.down_button.clicked.connect(lambda: self.move_piezo(1,0,self.experiment.config['electronics']['vertical_axis']))
+        self.left_button.clicked.connect(lambda: self.move_piezo(1,1,self.experiment.config['electronics']['horizontal_axis']))
+        self.right_button.clicked.connect(lambda: self.move_piezo(1,0,self.experiment.config['electronics']['horizontal_axis']))
+        self.plus_button.clicked.connect(lambda: self.move_piezo(30,1,3))
+        self.minus_button.clicked.connect(lambda: self.move_piezo(30,0,3))
 
         while self.experiment.camera_fiber.config['exposure'] is None:
             time.sleep(.1)
