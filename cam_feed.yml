@@ -146,7 +146,7 @@ laser_focusing:
 microscope_focusing:
   high:
     exposure_time: 50ms
-    gain: 40.
+    gain: 10. # originally 40.
   low:
     exposure_time: 50ms
     gain: 0.

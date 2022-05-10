@@ -4,8 +4,8 @@ import time
 import yaml
 from PyQt5.QtWidgets import QApplication
 
-from cam_feed.models.experiment import CamSetup
-from cam_feed.views.cam_window import CamWindow
+from alignment.models.experiment import CamSetup
+from alignment.views.cam_window import CamWindow
 from experimentor.lib.log import log_to_screen, get_logger
 
 if __name__ == "__main__":
