@@ -2,6 +2,8 @@ import os
 from ssl import ALERT_DESCRIPTION_ACCESS_DENIED
 import time
 from datetime import datetime
+from multiprocessing import Event
+
 
 from skimage import data, filters, io
 import numpy as np
@@ -15,7 +17,8 @@ from experimentor.models.devices.cameras.exceptions import CameraTimeout
 from experimentor.models.experiments import Experiment
 from dispertech.models.electronics.arduino import ArduinoModel
 from experimentor.models.decorators import make_async_thread
-
+from recording.models.movie_saver import WaterfallSaver
+from experimentor.core.signal import Signal
 
 
 
@@ -32,10 +35,12 @@ class RecordingSetup(Experiment):
         self.electronics = None
         self.display_camera = None
         self.finalized = False
+        self.new_image = Signal()
+        self.saving_event = Event()
         
 
         self.demo_image = data.colorwheel()
-        self.processed_image = self.demo_image
+        self.waterfall_image = self.demo_image
         self.display_image = self.demo_image
         self.active = True
         self.now = None
@@ -96,10 +101,56 @@ class RecordingSetup(Experiment):
     def save_waterfall(self):
         """Assuming a set ROI, this function calculates a waterfall slice per image frame and sends it to a MovieSaver instance
         """
+        img = self.camera_microscope.temp_image
+        self.waterfall_image = np.zeros((1,img.shape[0]))
         while self.active:
             img = self.camera_microscope.temp_image
-        self.camera_microscope.new_image.emit('stop')
+            new_slice = np.sum(img, axis=1)
+            self.new_image.emit(new_slice)
+
+            if self.waterfall_image.shape[0] < 1000: #MAKE CONFIG PARAMETER    
+                self.waterfall_image[-1,:] = new_slice
+                self.waterfall_image = np.vstack([self.waterfall_image, np.empty((1,sample_images[0].shape[1]))])
+            else:
+                self.waterfall_image = np.roll(self.waterfall_image, -1, 0)
+                self.waterfall_image[-1,:] = new_slice
+            time.sleep(.5)
+        self.stop_saving_images()
         
+    def start_saving_images(self):
+        if self.saving:
+            self.logger.warning('Saving process still running: self.saving is true')
+        if self.saving_process is not None and self.saving_process.is_alive():
+            self.logger.warning('Saving process is alive, stop the saving process first')
+            return
+
+        self.saving = True
+        base_filename = self.config['info']['filename_movie']
+        file = self.get_filename(base_filename)
+        self.saving_event.clear()
+        # Make Waterfall saver
+        self.saving_process = WaterfallSaver(
+            file,
+            self.config['saving']['max_memory'],
+            self.camera_microscope.frame_rate,
+            self.saving_event,
+            self.new_image.url,
+            topic='new_image',
+            metadata=self.camera_microscope.config.all(),
+        )
+
+    def stop_saving_images(self):
+        self.new_image.emit('stop')
+        # self.emit('new_image', 'stop')
+
+        # self.saving_event.set()
+        time.sleep(.05)
+
+        if self.saving_process is not None and self.saving_process.is_alive():
+            self.logger.warning('Saving process still alive')
+            time.sleep(.1)
+        self.saving = False
+
     @Action
     def snap_image(self, camera):
         self.logger.info(f'Trying to snap image on {camera}')
@@ -168,13 +219,45 @@ class RecordingSetup(Experiment):
         return self.display_image
 
     def get_waterfall_image(self):
-        return self.processed_image
+        return self.waterfall_image
+
+    def prepare_folder(self) -> str:
+        """Creates the folder with the proper date, using the base directory given in the config file"""
+        base_folder = self.config['info']['folder']
+        today_folder = f'{datetime.today():%Y-%m-%d}'
+        folder = os.path.join(base_folder, today_folder)
+        if not os.path.isdir(folder):
+            os.makedirs(folder)
+        return folder
+
+    def get_filename(self, base_filename: str) -> str:
+        """Checks if the given filename exists in the given folder and increments a counter until the first non-used
+        filename is available.
+
+        :param base_filename: must have two placeholders {cartridge_number} and {i}
+        :returns: full path to the file where to save the data
+        """
+        folder = self.prepare_folder()
+        i = 0
+        cartridge_number = self.config['info']['cartridge_number']
+        while os.path.isfile(os.path.join(folder, base_filename.format(
+                cartridge_number=cartridge_number,
+                i=i))):
+            i += 1
+
+        return os.path.join(folder, base_filename.format(cartridge_number=cartridge_number, i=i))
 
     def finalize(self):
         if self.finalized:
            return
         self.logger.info('Finalizing calibration experiment')
+        self.active = False
         
+        if self.saving:
+            self.logger.debug('Finalizing the saving images')
+            self.stop_saving_images()
+        self.saving_event.set()
+
         self.camera_microscope.finalize()
         self.set_laser_power(0)
         self.electronics.finalize()

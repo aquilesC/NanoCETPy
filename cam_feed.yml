@@ -28,7 +28,7 @@ mirror:
   speed: 1
 
 info:
-  folder: "C:\\Users\\Aquiles\\Data"
+  folder: "C:\\Users\\Jakob Schroeder\\Code\\NanoCETPy\\recorded"
   cartridge_number: 2001001
   description: "Diffusion Movie"
   filename_fiber: fiber_end_{cartridge_number}_{i}.npy

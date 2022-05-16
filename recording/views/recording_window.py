@@ -31,7 +31,8 @@ class WaterfallWindow(QMainWindow, BaseView):
 
         self.connect_to_action(self.ROI_button.clicked, self.experiment.find_ROI)
         self.connect_to_action(self.save_button.clicked, self.experiment.save_waterfall)
-
+        self.stop_button.clicked.connect(self.experiment.toggle_active)
+        
         while self.experiment.camera_microscope.config['exposure'] is None:
             time.sleep(.1)
         
