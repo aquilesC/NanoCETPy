@@ -8,7 +8,7 @@ from multiprocessing import Event
 from skimage import data, filters, io
 import numpy as np
 from scipy import optimize
-from . import model_utils as ut
+#from . import model_utils as ut
 
 from experimentor.models.action import Action
 from experimentor import Q_
@@ -25,8 +25,6 @@ from experimentor.core.signal import Signal
 class RecordingSetup(Experiment):
     """ Setup for recording Fiber core
     """
-    # What is Signal() for? 
-
     def __init__(self, filename=None):
         super(RecordingSetup, self).__init__(filename=filename)
         
@@ -35,8 +33,8 @@ class RecordingSetup(Experiment):
         self.electronics = None
         self.display_camera = None
         self.finalized = False
-        self.new_image = Signal()
         self.saving_event = Event()
+        self.saving = False
         
 
         self.demo_image = data.colorwheel()
@@ -80,20 +78,25 @@ class RecordingSetup(Experiment):
     def find_ROI(self):
         """Assuming alignment, this function fits a gaussian to the microscope images cross section to compute an ROI
         """
+        self.update_camera(self.camera_microscope, self.config['microscope_focusing']['high'])
+        self.set_laser_power(99)
+        time.sleep(1)
         self.snap_image(self.camera_microscope)
+        time.sleep(1)
         img = self.camera_microscope.temp_image
         measure = np.sum(img, axis=0)
-        cx = np.argwhere(measure = np.max(measure))[0][0]
+        cx = np.argwhere(measure == np.max(measure))[0][0]
         measure = measure[cx-100:cx+100]
         xvals = np.arange(0,measure.shape[0],1)
         gaussian1d = lambda x, mean, var, A, bg: A * np.exp(-(x-mean)**2 / (2 *var)) + bg
         popt, pcov = optimize.curve_fit(gaussian1d, xvals, measure, p0=[0, 50, np.max(measure)-np.min(measure), np.min(measure)])
         cx += int(popt[0])
-        width = int(2 * np.sqrt(popt[1]))    
+        width = 2 * int(2 * np.sqrt(popt[1]))    
 
         current_roi = self.camera_microscope.ROI
         new_roi = (current_roi[0], (cx-width, 2*width))
         self.camera_microscope.ROI = new_roi
+        self.logger.info('ROI set up')
 
         self.toggle_live(self.camera_microscope)
 
@@ -101,20 +104,15 @@ class RecordingSetup(Experiment):
     def save_waterfall(self):
         """Assuming a set ROI, this function calculates a waterfall slice per image frame and sends it to a MovieSaver instance
         """
+        self.start_saving_images()
         img = self.camera_microscope.temp_image
-        self.waterfall_image = np.zeros((1,img.shape[0]))
+        self.waterfall_image = np.zeros((img.shape[0],1000)) #MAKE CONFIG PARAMETER
         while self.active:
             img = self.camera_microscope.temp_image
             new_slice = np.sum(img, axis=1)
-            self.new_image.emit(new_slice)
-
-            if self.waterfall_image.shape[0] < 1000: #MAKE CONFIG PARAMETER    
-                self.waterfall_image[-1,:] = new_slice
-                self.waterfall_image = np.vstack([self.waterfall_image, np.empty((1,sample_images[0].shape[1]))])
-            else:
-                self.waterfall_image = np.roll(self.waterfall_image, -1, 0)
-                self.waterfall_image[-1,:] = new_slice
-            time.sleep(.5)
+            self.waterfall_image = np.roll(self.waterfall_image, -1, 1)
+            self.waterfall_image[:,-1] = new_slice
+            time.sleep(.1)
         self.stop_saving_images()
         
     def start_saving_images(self):
@@ -128,13 +126,12 @@ class RecordingSetup(Experiment):
         base_filename = self.config['info']['filename_movie']
         file = self.get_filename(base_filename)
         self.saving_event.clear()
-        # Make Waterfall saver
         self.saving_process = WaterfallSaver(
             file,
             self.config['saving']['max_memory'],
             self.camera_microscope.frame_rate,
             self.saving_event,
-            self.new_image.url,
+            self.camera_microscope.new_image.url,
             topic='new_image',
             metadata=self.camera_microscope.config.all(),
         )
