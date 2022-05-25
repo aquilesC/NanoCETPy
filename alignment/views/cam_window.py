@@ -37,6 +37,7 @@ class AlignmentWindow(QMainWindow, BaseView):
         self.connect_to_action(self.live_button.clicked, lambda: self.experiment.toggle_live(self.experiment.camera_fiber))
         self.connect_to_action(self.live_button_2.clicked, lambda: self.experiment.toggle_live(self.experiment.camera_microscope))
         self.connect_to_action(self.laser_button.clicked, self.experiment.toggle_laser)
+        self.connect_to_action(self.ROI_button.clicked, self.experiment.set_fiber_ROI)
         self.stop_button.clicked.connect(self.experiment.toggle_active)
         self.linesave_button.clicked.connect(self.experiment.save_image)
         self.laser_process_button.clicked.connect(self.experiment.process_laser)
