@@ -27,12 +27,12 @@ class WaterfallWindow(QMainWindow, BaseView):
         self.camera_viewer = CameraViewerWidget(parent=self)
         self.camera_widget.layout().addWidget(self.camera_viewer)
         self.waterfall_viewer = CameraViewerWidget(parent=self)
-        self.waterfall_widget.layout().addWidget(self.processing_viewer)
+        self.waterfall_widget.layout().addWidget(self.waterfall_viewer)
 
         self.connect_to_action(self.ROI_button.clicked, self.experiment.find_ROI)
         self.connect_to_action(self.save_button.clicked, self.experiment.save_waterfall)
         self.stop_button.clicked.connect(self.experiment.toggle_active)
-        
+
         while self.experiment.camera_microscope.config['exposure'] is None:
             time.sleep(.1)
         
