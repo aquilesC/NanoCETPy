@@ -3,7 +3,7 @@ from ssl import ALERT_DESCRIPTION_ACCESS_DENIED
 import time
 from datetime import datetime
 
-from skimage import data, filters, io
+from skimage import data, io
 import numpy as np
 from . import model_utils as ut
 
@@ -123,8 +123,10 @@ class AlignmentSetup(Experiment):
         # Find center function
             # find maximum
         time.sleep(5)
-        fiber = filters.gaussian(self.camera_fiber.temp_image, 4, mode='constant')
-        fiber_center = np.argwhere(fiber==np.max(fiber))[0]
+        fiber = ut.image_convolution(self.camera_fiber.temp_image)
+        mask = ut.gaussian2d_array((int(fiber.shape[0]/2),int(fiber.shape[1]/2)),10000,fiber.shape)
+        fibermask = fiber * mask
+        fiber_center = np.argwhere(fibermask==np.max(fibermask))[0]
         tstring = self.now.strftime('_%M_%S')
         io.imsave('recorded/fiber'+tstring+'.tiff', fiber)
         #fiber_center = [454, 174] # for testing
@@ -317,6 +319,14 @@ class AlignmentSetup(Experiment):
             self.display_camera = camera
             self.logger.info('Continuous reads started')
 
+    @Action
+    def set_fiber_ROI(self):
+        width = 250
+        cx, cy = 500,500
+        new_roi = ((cy-width, 2*width), (cx-width, 2*width))
+        self.camera_fiber.ROI = new_roi
+        self.logger.info('ROI set up')
+
     def update_camera(self, camera, new_config):
         """ Updates the properties of the camera.
         new_config should be dict with keys exposure_time and gain"""
@@ -376,11 +386,6 @@ class AlignmentSetup(Experiment):
             self.camera_fiber.config.apply_all()
             self.processing_test(sigma=i)
             time.sleep(1)
-    
-    def processing_test(self, sigma=1):
-        img = self.display_image
-        if img is None: self.logger.info('TEST img is None')
-        self.processed_image = filters.gaussian(img, sigma=5*sigma, preserve_range=True)
 
     def finalize(self):
         if self.finalized:

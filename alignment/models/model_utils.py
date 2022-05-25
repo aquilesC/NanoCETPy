@@ -1,9 +1,10 @@
-from skimage import measure
 import numpy as np
 
 def centroid(image):
-    m = measure.moments(image)
-    return m[1,0]/m[0,0], m[0,1]/m[0,0]
+    m00 = np.sum(image)
+    m10, m01 = np.arange(0,image.shape[0],1) * np.sum(image, axis=1), np.arange(0,image.shape[1],1) * np.sum(image, axis=0)
+    m10, m01 = np.sum(m10), np.sum(m01)
+    return int(m10/m00), int(m01/m00)
 
 def gaussian2d_array(mean, var, size = (1000, 1000)):
     x, y = np.meshgrid(np.arange(0,size[0],1),np.arange(0,size[1],1), indexing='ij')
@@ -16,3 +17,7 @@ def to_uint8(image):
         image = 255 * (image/m)
         image = image.astype(np.uint8)
         return image
+
+def image_convolution(image, kernel=np.ones((5,5))):
+    convolution = ndimage.convolve(image, kernel, mode='reflect')
+    return convolution    
