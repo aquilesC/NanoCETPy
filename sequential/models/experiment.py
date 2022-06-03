@@ -30,10 +30,11 @@ class MainSetup(Experiment):
         self.camera_fiber = None
         self.camera_microscope = None
         self.electronics = None
-        self.display_camera = None
+        self.display_camera = self.camera_microscope
         self.finalized = False
         self.saving_event = Event()
         self.saving = False
+        self.saving_process = None
         self.aligned = False
         
         self.demo_image = data.colorwheel()
@@ -44,7 +45,6 @@ class MainSetup(Experiment):
 
     @Action
     def initialize(self):
-        return
         self.initialize_cameras()
         self.initialize_electronics()
 
@@ -73,6 +73,17 @@ class MainSetup(Experiment):
     def toggle_active(self):
         self.active = not self.active
 
+    def focus_start(self):
+        self.set_fiber_ROI()
+        self.toggle_live(self.camera_microscope)
+        self.update_camera(self.camera_microscope, self.config['microscope_focusing']['low'])
+        self.electronics.top_led = 1
+
+    def focus_stop(self):
+        if self.camera_microscope.continuous_reads_running:
+            self.toggle_live(self.camera_microscope)
+        self.electronics.top_led = 0
+    
     @make_async_thread
     def start_alignment(self):
         """ Wraps the whole alignment procedure from focussing to aligning.
@@ -84,9 +95,13 @@ class MainSetup(Experiment):
         Returns:
             None
         """
-        time.sleep(5)
-        self.aligned = True
-        return # For testing 
+        if True: # TESTING
+            time.sleep(5)
+            self.aligned = True
+            self.toggle_live(self.camera_microscope)
+            self.set_laser_power(99)
+            self.update_camera(self.camera_microscope, self.config['microscope_focusing']['high'])
+            return
         self.logger.info('TEST Starting Laser Alignment')
         self.active = True
         # Toggle live
@@ -108,7 +123,7 @@ class MainSetup(Experiment):
         self.update_camera(self.camera_fiber, self.config['laser_focusing']['high'])
         # Find center function
         time.sleep(5)
-        fiber = ut.image_convolution(self.camera_fiber.temp_image)
+        fiber = ut.image_convolution(self.camera_fiber.temp_image, kernel=np.ones((3,3)))
         mask = ut.gaussian2d_array((int(fiber.shape[0]/2),int(fiber.shape[1]/2)),10000,fiber.shape)
         fibermask = fiber * mask
         fiber_center = np.argwhere(fibermask==np.max(fibermask))[0]
@@ -237,8 +252,8 @@ class MainSetup(Experiment):
 
     @Action
     def set_fiber_ROI(self):
-        width = 250
-        cx, cy = 500,500
+        width = 220
+        cx, cy = 520,480
         new_roi = ((cy-width, 2*width), (cx-width, 2*width))
         self.camera_fiber.ROI = new_roi
         self.logger.info('ROI set up')
@@ -247,20 +262,32 @@ class MainSetup(Experiment):
     def find_ROI(self):
         """Assuming alignment, this function fits a gaussian to the microscope images cross section to compute an ROI
         """
-        self.update_camera(self.camera_microscope, self.config['microscope_focusing']['high'])
-        self.set_laser_power(99)
-        time.sleep(1)
-        self.snap_image(self.camera_microscope)
-        time.sleep(1)
+        #self.update_camera(self.camera_microscope, self.config['microscope_focusing']['high'])
+        #self.set_laser_power(99)
+        #time.sleep(1)
+        #self.snap_image(self.camera_microscope)
+        #time.sleep(1)
         img = self.camera_microscope.temp_image
+        self.toggle_live(self.camera_microscope)
+        while self.camera_microscope.continuous_reads_running:
+            time.sleep(.1)
+        self.logger.info(f'TEST imgshape {img.shape}')
         measure = np.sum(img, axis=0)
         cx = np.argwhere(measure == np.max(measure))[0][0]
         measure = measure[cx-100:cx+100]
-        xvals = np.arange(0,measure.shape[0],1)
+        measure = measure / np.max(measure)
+        xvals = np.linspace(0,1,measure.shape[0]) - 0.5
         gaussian1d = lambda x, mean, var, A, bg: A * np.exp(-(x-mean)**2 / (2 *var)) + bg
-        popt, pcov = optimize.curve_fit(gaussian1d, xvals, measure, p0=[0, 50, np.max(measure)-np.min(measure), np.min(measure)])
-        cx += int(popt[0])
-        width = 2 * int(2 * np.sqrt(popt[1]))    
+        popt, pcov = optimize.curve_fit(
+            gaussian1d, 
+            xvals, 
+            measure, 
+            p0=[0, 0.1, np.max(measure)-np.min(measure), np.min(measure)],
+            bounds=([-0.5,0,0,0],[0.5,1,1,1]))
+        self.logger.info(f'TEST {popt}')
+        cx += int(popt[0] * measure.shape[0])
+        width = 2 * int(2 * np.sqrt(popt[1] * measure.shape[0]))  
+        self.logger.info('optimized')  
 
         current_roi = self.camera_microscope.ROI
         new_roi = (current_roi[0], (cx-width, 2*width))
@@ -306,7 +333,7 @@ class MainSetup(Experiment):
         )
 
     def stop_saving_images(self):
-        self.new_image.emit('stop')
+        self.camera_microscope.new_image.emit('stop')
         # self.emit('new_image', 'stop')
 
         # self.saving_event.set()
@@ -379,10 +406,7 @@ class MainSetup(Experiment):
             self.update_camera(self.camera_fiber, self.config['laser_focusing']['high'])
 
     def get_latest_image(self):
-        if self.display_camera is not None: 
-            self.display_image = self.display_camera.temp_image
-        else: self.display_image = self.demo_image
-        return self.display_image
+        return self.camera_microscope.temp_image
 
     def get_waterfall_image(self):
         return self.waterfall_image
