@@ -35,6 +35,7 @@ class RecordingSetup(Experiment):
         self.finalized = False
         self.saving_event = Event()
         self.saving = False
+        self.saving_process = None
         
 
         self.demo_image = data.colorwheel()
@@ -137,7 +138,7 @@ class RecordingSetup(Experiment):
         )
 
     def stop_saving_images(self):
-        self.new_image.emit('stop')
+        self.camera_microscope.new_image.emit('stop')
         # self.emit('new_image', 'stop')
 
         # self.saving_event.set()
