@@ -7,21 +7,39 @@
     <x>0</x>
     <y>0</y>
     <width>1000</width>
-    <height>600</height>
+    <height>750</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
     <width>1000</width>
-    <height>600</height>
+    <height>750</height>
    </size>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <layout class="QHBoxLayout" name="horizontalLayout" stretch="1,3">
+  <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,3">
+   <property name="leftMargin">
+    <number>0</number>
+   </property>
+   <property name="topMargin">
+    <number>0</number>
+   </property>
+   <property name="rightMargin">
+    <number>0</number>
+   </property>
+   <property name="bottomMargin">
+    <number>0</number>
+   </property>
    <item>
-    <widget class="QWidget" name="verticalWidget" native="true">
+    <widget class="QFrame" name="frame">
+     <property name="minimumSize">
+      <size>
+       <width>200</width>
+       <height>0</height>
+      </size>
+     </property>
      <layout class="QVBoxLayout" name="verticalLayout_2">
       <item>
        <widget class="QLabel" name="label">
@@ -32,6 +50,12 @@
       </item>
       <item>
        <widget class="QPushButton" name="start_button">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>35</height>
+         </size>
+        </property>
         <property name="text">
          <string>Start Measurement</string>
         </property>
@@ -48,7 +72,7 @@
        <height>0</height>
       </size>
      </property>
-     <layout class="QVBoxLayout" name="verticalLayout" stretch="1,2,1,10">
+     <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,0,10">
       <item>
        <widget class="QLabel" name="label_5">
         <property name="font">
@@ -63,7 +87,29 @@
       </item>
       <item>
        <widget class="QWidget" name="microscope_widget" native="true">
-        <layout class="QVBoxLayout" name="verticalLayout_3"/>
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>100</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>100</height>
+         </size>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout_3">
+         <property name="leftMargin">
+          <number>0</number>
+         </property>
+         <property name="topMargin">
+          <number>0</number>
+         </property>
+         <property name="rightMargin">
+          <number>0</number>
+         </property>
+        </layout>
        </widget>
       </item>
       <item>
@@ -79,13 +125,19 @@
        </widget>
       </item>
       <item>
-       <layout class="QVBoxLayout" name="verticalLayout_4" stretch="1,2,2">
+       <layout class="QVBoxLayout" name="verticalLayout_4" stretch="1,2,2,1">
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_4">
           <item>
            <widget class="QLabel" name="label_4">
+            <property name="toolTip">
+             <string>test</string>
+            </property>
             <property name="text">
              <string>Experiment Name</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignBottom|Qt::AlignLeading|Qt::AlignLeft</set>
             </property>
            </widget>
           </item>
@@ -94,7 +146,14 @@
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="3,1">
           <item>
-           <widget class="QLineEdit" name="lineEdit"/>
+           <widget class="QLineEdit" name="name_line">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>35</height>
+             </size>
+            </property>
+           </widget>
           </item>
           <item>
            <spacer name="horizontalSpacer">
@@ -120,10 +179,20 @@
               <property name="text">
                <string>Exposure time</string>
               </property>
+              <property name="alignment">
+               <set>Qt::AlignBottom|Qt::AlignLeading|Qt::AlignLeft</set>
+              </property>
              </widget>
             </item>
             <item>
-             <widget class="QLineEdit" name="lineEdit_3"/>
+             <widget class="QLineEdit" name="exp_line">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>35</height>
+               </size>
+              </property>
+             </widget>
             </item>
            </layout>
           </item>
@@ -134,12 +203,39 @@
               <property name="text">
                <string>Gain</string>
               </property>
+              <property name="alignment">
+               <set>Qt::AlignBottom|Qt::AlignLeading|Qt::AlignLeft</set>
+              </property>
              </widget>
             </item>
             <item>
-             <widget class="QLineEdit" name="lineEdit_2"/>
+             <widget class="QLineEdit" name="gain_line">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>35</height>
+               </size>
+              </property>
+             </widget>
             </item>
            </layout>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_5">
+          <item>
+           <spacer name="verticalSpacer">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
           </item>
          </layout>
         </item>
