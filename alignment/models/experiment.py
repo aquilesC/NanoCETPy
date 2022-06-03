@@ -98,6 +98,10 @@ class AlignmentSetup(Experiment):
             self.electronics.move_piezo(50,1,3) 
             #time.sleep(.5)
         self.update_camera(self.camera_fiber, self.config['laser_focusing']['high'])
+        # Change this
+        if self.camera_fiber.continuous_reads_running: self.toggle_live(self.camera_fiber)
+        if self.camera_microscope.continuous_reads_running: self.toggle_live(self.camera_microscope)
+        time.sleep(1)
         # Toggle live
         self.toggle_live(self.camera_fiber)
         # Set exposure and gain
@@ -123,7 +127,7 @@ class AlignmentSetup(Experiment):
         # Find center function
             # find maximum
         time.sleep(5)
-        fiber = ut.image_convolution(self.camera_fiber.temp_image)
+        fiber = ut.image_convolution(self.camera_fiber.temp_image, kernel = np.ones((3,3)))
         mask = ut.gaussian2d_array((int(fiber.shape[0]/2),int(fiber.shape[1]/2)),10000,fiber.shape)
         fibermask = fiber * mask
         fiber_center = np.argwhere(fibermask==np.max(fibermask))[0]
@@ -321,8 +325,8 @@ class AlignmentSetup(Experiment):
 
     @Action
     def set_fiber_ROI(self):
-        width = 250
-        cx, cy = 500,500
+        width = 220
+        cx, cy = 520,480
         new_roi = ((cy-width, 2*width), (cx-width, 2*width))
         self.camera_fiber.ROI = new_roi
         self.logger.info('ROI set up')
