@@ -148,7 +148,7 @@ class WaterfallSaver(ExperimentorProcess):
                 buf = memoryview(msg)
                 img = np.frombuffer(buf, dtype=metadata['dtype'])
                 img = img.reshape(metadata['shape'], order="F").copy()
-                img = np.sum(img, axis=0) #CHECK THIS
+                img = np.sum(img, axis=1) #CHECK THIS
 
                 # Using byte order F gives the proper shape, but it is camera-dependent
                 # This works fine for Basler, but need to keep an eye for the future
