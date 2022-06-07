@@ -11,10 +11,12 @@ from . import model_utils as ut
 
 from experimentor.models.action import Action
 from experimentor import Q_
-from experimentor.models.devices.cameras.basler.basler import BaslerCamera as Camera
+#from experimentor.models.devices.cameras.basler.basler import BaslerCamera as Camera
+from .basler import BaslerNanoCET as Camera
 from experimentor.models.devices.cameras.exceptions import CameraTimeout
 from experimentor.models.experiments import Experiment
-from dispertech.models.electronics.arduino import ArduinoModel
+#from dispertech.models.electronics.arduino import ArduinoModel
+from .arduino import ArduinoNanoCET
 from experimentor.models.decorators import make_async_thread
 from recording.models.movie_saver import WaterfallSaver
 from experimentor.core.signal import Signal
@@ -45,8 +47,27 @@ class MainSetup(Experiment):
 
     @Action
     def initialize(self):
-        self.initialize_cameras()
-        self.initialize_electronics()
+        #self.initialize_cameras()
+        #self.initialize_electronics()
+
+        #Instantiate Camera and Arduino objects
+        self.logger.info('Instantiating Cameras and Arduino')
+        config_fiber = self.config['camera_fiber']
+        self.camera_fiber = Camera(config_fiber['init'], initial_config=config_fiber['config'])
+        config_mic = self.config['camera_microscope']
+        self.camera_microscope = Camera(config_mic['init'], initial_config=config_mic['config'])
+        self.electronics = ArduinoNanoCET(**self.config['electronics']['arduino'])
+
+        #Loop over instances until all are initialized
+        while self.active:
+            self.logger.info('TEST init loop')
+            initialized = [self.camera_fiber.initialized, self.camera_microscope.initialized, self.electronics.initialized]
+            if all(initialized): return
+            if not initialized[0]: self.camera_fiber.initialize()
+            if not initialized[1]: self.camera_microscope.initialize()
+            if not initialized[2]: self.electronics.initialize()
+        self.logger.info('TEST init loop exit')
+            
 
     def initialize_cameras(self):
         """Assume a specific setup working with baslers and initialize both cameras"""

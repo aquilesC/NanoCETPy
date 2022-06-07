@@ -157,21 +157,24 @@ class StartupWidget(QWidget, BaseView):
         uic.loadUi(os.path.join(BASE_DIR_VIEW, 'Startup_Widget.ui'), self)
         self.experiment = experiment
 
-        self.executor = None 
-        self.initialize_check = True
+        self.intialized = [False, False, False]
+        self.check_string = {True: 'initialized.', False: '...'}
+        #self.device_label.setText(f' {self.experiment.camera_fiber.camera} \n\n {self.experiment.camera_microscope.camera} \n\n Electronics ')
 
+        self.experiment.initialize()
         self.check_connections_timer = QTimer()
         self.check_connections_timer.timeout.connect(self.check_connections)
         self.check_connections_timer.start(100)
 
     def check_connections(self):
-        if self.initialize_check:
-            self.executor = self.experiment.initialize()
-            self.initialize_check = False
-        if self.executor.running(): return
-        self.ready_signal.emit()
-        self.check_connections_timer.stop()
-        logger.info('Ready')
+        if self.experiment.electronics is None: return
+        initialized = [self.experiment.camera_fiber.initialized, self.experiment.camera_microscope.initialized, self.experiment.electronics.initialized]
+        self.device_label.setText(f' {self.experiment.camera_fiber.camera} \n\n {self.experiment.camera_microscope.camera} \n\n Electronics ')
+        self.check_label.setText(f' {self.check_string[initialized[0]]} \n\n {self.check_string[initialized[1]]} \n\n {self.check_string[initialized[2]]}')
+        if all(initialized):
+            self.ready_signal.emit()
+            self.check_connections_timer.stop()
+            logger.info('Ready')
 
 
 class PreferencesWidget(QWidget, BaseView):
