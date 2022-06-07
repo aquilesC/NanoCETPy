@@ -15,7 +15,7 @@ from experimentor.lib.log import log_to_screen, get_logger
 if __name__ == "__main__":
     logger = get_logger()
     handler = log_to_screen(logger=logger)
-    if sys.argv[1] == 'demo':
+    if len(sys.argv) > 1 and sys.argv[1] == 'demo':
         experiment = DemoExperiment()
     else:
         experiment = MainSetup()

@@ -13,7 +13,9 @@ class DemoExperiment(Experiment):
 
     def __init__(self, filename=None):
         super(DemoExperiment, self).__init__(filename=filename)
+        self.camera_fiber = DemoCam()
         self.camera_microscope = DemoCam()
+        self.electronics = DemoElectronics()
         self.aligned = True
         self.active = True
         self.saving = True
@@ -62,3 +64,9 @@ class DemoExperiment(Experiment):
 class DemoCam:
     def __init__(self):
         self.continuous_reads_running = True
+        self.initialized = True
+        self.camera = 'DemoCam'
+
+class DemoElectronics:
+    def __init__(self):
+        self.initialized = True
