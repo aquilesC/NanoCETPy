@@ -22,11 +22,10 @@ class BaslerNanoCET(BaslerCamera):
         self.logger.debug('Initializing Basler Camera')
         tl_factory = pylon.TlFactory.GetInstance()
         devices = tl_factory.EnumerateDevices()
-        #if len(devices) == 0:
-        #    msg = f'Basler {self.camera} not found. Please check if the camera is connected'
-        #    self.logger.error(msg)
-        #    return
-            #raise CameraNotFound('No camera found')
+        if len(devices) == 0:
+            msg = f'Basler {self.camera} not found. Please check if the camera is connected'
+            self.logger.error(msg)
+            raise CameraNotFound('No camera found')
 
         for device in devices:
             if self.camera in device.GetFriendlyName():
@@ -38,8 +37,7 @@ class BaslerNanoCET(BaslerCamera):
         if not self._driver:
             msg = f'Basler {self.camera} not found. Please check if the camera is connected'
             self.logger.error(msg)
-            return
-            #raise CameraNotFound(msg)
+            raise CameraNotFound(msg)
 
         self.logger.info(f'Loaded camera {self._driver.GetDeviceInfo().GetModelName()}')
 

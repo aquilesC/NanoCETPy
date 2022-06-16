@@ -24,21 +24,34 @@ class ArduinoNanoCET(ArduinoModel):
 
     @make_async_thread
     def initialize(self):
-        self.logger.info('TEST arduino init')
         with self.query_lock:
-            self.logger.info('TEST arduino init lock')
-            try:
-                self.logger.info('TEST arduino init try1') 
-                if not self.port:
-                    self.port = Arduino.list_devices()[self.device]
-                self.driver = rm.open_resource(self.port)
-                self.logger.info('TEST arduino init try2') 
-            except (FileNotFoundError, SerialException): 
-                self.logger.error(f'Nothing in Port {self.port}')
-                return
-            self.logger.info('TEST arduino init sleep') 
-            time.sleep(1)
-            self.driver.baud_rate = self.baud_rate
+            if self.port:
+                try:
+                    if not self.port:
+                        self.port = Arduino.list_devices()[self.device]
+                    self.driver = rm.open_resource(self.port)
+                except:
+                    raise SerialException()
+                self.driver.baud_rate = self.baud_rate
+            else:    
+                device_ports = rm.list_resources()
+                if len(device_ports) == 0: raise Exception()
+                for port in device_ports:
+                    try:
+                        self.driver = rm.open_resource(port)
+                        self.driver.baud_rate = self.baud_rate
+                        time.sleep(.1)
+                        if self.driver.query('IDN').startswith('Dispertech'): break
+                        self.driver.close()
+                    except:
+                        try:
+                            self.driver.close()
+                        except:
+                            pass
+                try:
+                    self.driver.session
+                except pyvisa.errors.InvalidSession:
+                    raise
             # This is very silly, but clears the buffer so that next messages are not broken
             try:
                 self.driver.query("IDN")
@@ -52,3 +65,4 @@ class ArduinoNanoCET(ArduinoModel):
                 self.config.update(self.initial_config)
                 self.config.apply_all()
             self.initialized = True
+            self.logger.info('TEST arduino init done') 

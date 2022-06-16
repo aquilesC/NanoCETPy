@@ -3,6 +3,8 @@ from ssl import ALERT_DESCRIPTION_ACCESS_DENIED
 import time
 from datetime import datetime
 from multiprocessing import Event
+from serial import SerialException
+
 
 from skimage import data, filters, io
 import numpy as np
@@ -63,9 +65,21 @@ class MainSetup(Experiment):
             self.logger.info('TEST init loop')
             initialized = [self.camera_fiber.initialized, self.camera_microscope.initialized, self.electronics.initialized]
             if all(initialized): return
-            if not initialized[0]: self.camera_fiber.initialize()
-            if not initialized[1]: self.camera_microscope.initialize()
-            if not initialized[2]: self.electronics.initialize()
+            if not initialized[0]: 
+                try:
+                    self.camera_fiber.initialize()
+                except:
+                    self.logger.info('Init Exception camera_fiber:', exc_info=True)
+            if not initialized[1]: 
+                try:
+                    self.camera_microscope.initialize()
+                except:
+                    self.logger.info('Init Exception camera_microscope:', exc_info=True)
+            if not initialized[2]:
+                try:
+                    self.electronics.initialize()
+                except:
+                    self.logger.info('Init Exception electronics:', exc_info=True)
         self.logger.info('TEST init loop exit')
             
 
@@ -95,6 +109,8 @@ class MainSetup(Experiment):
         self.active = not self.active
 
     def focus_start(self):
+        self.camera_fiber.ROI = self.camera_fiber.config['ROI'] 
+        self.camera_microscope.ROI = self.camera_microscope.config['ROI']      
         self.set_fiber_ROI()
         self.toggle_live(self.camera_microscope)
         self.update_camera(self.camera_microscope, self.config['microscope_focusing']['low'])
