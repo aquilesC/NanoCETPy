@@ -62,7 +62,7 @@
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="more_button">
+       <widget class="QPushButton" name="resume_button">
         <property name="minimumSize">
          <size>
           <width>0</width>
@@ -70,12 +70,44 @@
          </size>
         </property>
         <property name="text">
-         <string>Record more data</string>
+         <string>Resume Measurement</string>
         </property>
         <property name="flat">
          <bool>true</bool>
         </property>
        </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="change_button">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>35</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>Change parameters</string>
+        </property>
+        <property name="flat">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <spacer name="verticalSpacer">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+        <property name="sizeType">
+         <enum>QSizePolicy::Fixed</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>20</width>
+          <height>35</height>
+         </size>
+        </property>
+       </spacer>
       </item>
       <item>
        <widget class="QPushButton" name="quit_button">
@@ -86,7 +118,7 @@
          </size>
         </property>
         <property name="text">
-         <string>Quit</string>
+         <string>Quit experiment</string>
         </property>
         <property name="flat">
          <bool>true</bool>

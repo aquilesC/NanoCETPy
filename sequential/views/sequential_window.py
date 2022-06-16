@@ -1,3 +1,4 @@
+from cProfile import label
 import os
 import time
 import numpy as np
@@ -37,12 +38,20 @@ class SequentialMainWindow(QMainWindow, BaseView):
         self.experiment = experiment
         self.setWindowIcon(QtGui.QIcon(os.path.join(BASE_DIR_VIEW, 'dispertech-logo.png')))
         
-        self.sequence = ['Startup\n', 'Place \ncartridge', 'Focus and \nAlign', 'Set up \nexperiment', 'Measurement\n']
+        self.sequence = ['\u2460 Startup\n', '\u2461 Place \ncartridge', '\u2462 Focus and \nAlign', '\u2463 Set up \nexperiment', '\u2464 Measure-\nment\n']
+        self.label_redirect_dict = {
+            self.sequence[0]: self.startup_w,
+            self.sequence[1]: self.preferences_w,
+            self.sequence[2]: self.focus_w,
+            self.sequence[3]: self.parameters_w,
+            self.sequence[4]: self.measurement_w,
+             }
         self.left_frame.layout().addStretch()
         self.right_frame.layout().addStretch()
         self.startup_w()
     
     def startup_w(self):
+        self.clear_main_widget()
         startup_widget = StartupWidget(self.experiment)
         self.main_widget.layout().addWidget(startup_widget)
         startup_widget.ready_signal.connect(self.preferences_w)
@@ -52,7 +61,7 @@ class SequentialMainWindow(QMainWindow, BaseView):
     @pyqtSlot()
     def preferences_w(self):
         self.clear_main_widget()
-        title = QLabel('Place cartridge', objectName='title')
+        title = QLabel(' \u2461 Place cartridge', objectName='title')
         self.main_widget.layout().addWidget(title)
         preferences_widget = PreferencesWidget(self.experiment)
         self.main_widget.layout().addWidget(preferences_widget)
@@ -63,7 +72,7 @@ class SequentialMainWindow(QMainWindow, BaseView):
     @pyqtSlot()
     def focus_w(self):
         self.clear_main_widget()
-        title = QLabel('Focus and Align', objectName='title')
+        title = QLabel('\u2462 Focus and Align', objectName='title')
         self.main_widget.layout().addWidget(title)
         focus_widget = FocusWidget(self.experiment)
         self.main_widget.layout().addWidget(focus_widget)
@@ -75,7 +84,7 @@ class SequentialMainWindow(QMainWindow, BaseView):
     @pyqtSlot()
     def parameters_w(self):
         self.clear_main_widget()
-        title = QLabel('Set up experiment', objectName='title')
+        title = QLabel('\u2463 Set up experiment', objectName='title')
         self.main_widget.layout().addWidget(title)
         parameters_widget = ParametersWidget(self.experiment)
         self.main_widget.layout().addWidget(parameters_widget)
@@ -86,13 +95,12 @@ class SequentialMainWindow(QMainWindow, BaseView):
     @pyqtSlot()
     def measurement_w(self):
         self.clear_main_widget()
-        title = QLabel('Measurement', objectName='title')
+        title = QLabel('\u2464 Measurement', objectName='title')
         self.main_widget.layout().addWidget(title)
         measurement_widget = MeasurementWidget(self.experiment)
         self.main_widget.layout().addWidget(measurement_widget)
         measurement_widget.quit_signal.connect(self.close_w)
         measurement_widget.parameters_signal.connect(self.parameters_w)
-        measurement_widget.preferences_signal.connect(self.preferences_w)
         self.set_sequence_display(4)
         self.setWindowTitle('NanoCET - Measurement')
 
@@ -104,6 +112,7 @@ class SequentialMainWindow(QMainWindow, BaseView):
         close_widget = CloseWidget(self.experiment)
         self.main_widget.layout().addWidget(close_widget)
         close_widget.close_signal.connect(self.close)
+        close_widget.preferences_signal.connect(self.preferences_w)
         self.set_sequence_display(5)
         self.setWindowTitle('NanoCET - Closing')
 
@@ -119,8 +128,17 @@ class SequentialMainWindow(QMainWindow, BaseView):
             for i in range(layout.count()): 
                 widget = layout.itemAt(i).widget()
                 if widget: widget.deleteLater()
-        for idx, step in enumerate(before): left.insertWidget(idx,Label(step))
+        for idx, step in enumerate(before): 
+            widget = Label(step)
+            left.insertWidget(idx,widget)
+            widget.label_signal.connect(self.label_redirect)
         for idx, step in enumerate(after): right.insertWidget(idx,Label(step))  
+
+    @pyqtSlot(str)
+    def label_redirect(self, label_text):
+        #if not self.experiment.saving: 
+        self.logger.info('TEST redirect')
+        self.label_redirect_dict[label_text]()
 
     def clear_main_widget(self):
         for i in reversed(range(self.main_widget.layout().count())):
@@ -134,6 +152,8 @@ class SequentialMainWindow(QMainWindow, BaseView):
 
 
 class Label(QLabel):
+    label_signal = pyqtSignal(str)
+
     def __init__(self, *args, **kwargs):
         super(Label, self).__init__(*args, **kwargs)
         self.setAlignment(Qt.AlignTop)
@@ -144,6 +164,10 @@ class Label(QLabel):
             'border-radius: 10px;'
             'max-height: 100px;'
             'max-width: 150px;')
+        #self.mouseReleaseEvent.connect(self.label_emit)
+
+    def mouseReleaseEvent(self, event):
+        self.label_signal.emit(self.text())
 
 
 class StartupWidget(QWidget, BaseView):
@@ -161,13 +185,13 @@ class StartupWidget(QWidget, BaseView):
         self.check_string = {True: 'initialized.', False: '...'}
         #self.device_label.setText(f' {self.experiment.camera_fiber.camera} \n\n {self.experiment.camera_microscope.camera} \n\n Electronics ')
 
-        self.experiment.initialize()
+        if self.experiment.electronics is None: self.experiment.initialize()
         self.check_connections_timer = QTimer()
         self.check_connections_timer.timeout.connect(self.check_connections)
         self.check_connections_timer.start(100)
 
     def check_connections(self):
-        if self.experiment.electronics is None: return
+        if self.experiment.electronics is None: return # to wait for initialize function of experiment
         initialized = [self.experiment.camera_fiber.initialized, self.experiment.camera_microscope.initialized, self.experiment.electronics.initialized]
         self.device_label.setText(f' {self.experiment.camera_fiber.camera} \n\n {self.experiment.camera_microscope.camera} \n\n Electronics ')
         self.check_label.setText(f' {self.check_string[initialized[0]]} \n\n {self.check_string[initialized[1]]} \n\n {self.check_string[initialized[2]]}')
@@ -224,19 +248,40 @@ class FocusWidget(QWidget, BaseView):
         self.microscope_timer = QTimer()
         self.microscope_timer.timeout.connect(self.update_microscope_viewer)
 
-        self.experiment.focus_start() 
+        self.experiment.focus_start() #Unset ROI also
+        self.ROI_button.clicked.connect(self.set_ROI)
         self.align_button.clicked.connect(self.start_alignment)
         self.continue_button.clicked.connect(self.parameters)
         
         while not self.experiment.camera_microscope.continuous_reads_running:
             time.sleep(.1)
+        self.resized = False
         self.microscope_timer.start(50)
 
     def update_microscope_viewer(self):
         img = self.experiment.get_latest_image()
         if img is not None: self.microscope_viewer.update_image(img)
+        if not self.resized: 
+            self.resize(self.width()+1, self.height()+1)
+            self.resized = True
+
+    def set_ROI(self):
+        try:
+            self.microscope_viewer.roi_box
+            logger.info('Already displaying ROI box')
+            return
+        except:
+            logger.info('Display ROI box')
+        self.microscope_viewer.setup_roi_box()
+        self.align_button.setFlat(False)
+        self.align_button.style().unpolish(self.align_button)
+        self.align_button.style().polish(self.align_button)
 
     def start_alignment(self):
+        try:
+            self.microscope_viewer.roi_box
+        except:
+            return
         self.status_signal.emit('Aligning laser to fiber center...')
         self.experiment.focus_stop()
         self.experiment.start_alignment()
@@ -285,11 +330,15 @@ class ParametersWidget(QWidget, BaseView):
 
         self.start_button.clicked.connect(self.start)
 
+        self.resized = False
         self.microscope_timer.start(50)
 
     def update_microscope_viewer(self):
         img = self.experiment.get_latest_image()
         self.microscope_viewer.update_image(img)
+        if not self.resized: 
+            self.resize(self.width()+1, self.height()+1)
+            self.resized = True
 
     def update_parameters(self):
         self.experiment.update_camera(self.experiment.camera_microscope, {
@@ -329,18 +378,24 @@ class MeasurementWidget(QWidget, BaseView):
         self.waterfall_timer.timeout.connect(self.update_waterfall_viewer)
 
         self.stop_button.clicked.connect(self.stop_measurement)
-        self.more_menu = QMenu(self.more_button)
-        self.more_menu.addAction('With same cartrigde', self.parameters)
-        self.more_menu.addAction('With new cartridge', self.preferences)
-        self.more_button.setMenu(self.more_menu)
+        self.resume_button.clicked.connect(self.resume_measurement)
+        self.change_button.clicked.connect(self.parameters)
+        #self.more_menu = QMenu(self.more_button)
+        #self.more_menu.addAction('With same cartrigde', self.parameters)
+        #self.more_menu.addAction('With new cartridge', self.preferences)
+        #self.more_button.setMenu(self.more_menu)
         self.quit_button.clicked.connect(self.quit)
 
+        self.resized = False
         self.microscope_timer.start(50)
         self.waterfall_timer.start(50)
 
     def update_microscope_viewer(self):
         img = self.experiment.get_latest_image()
         self.microscope_viewer.update_image(img)
+        if not self.resized: 
+            self.resize(self.width()+1, self.height()+1)
+            self.resized = True
 
     def update_waterfall_viewer(self):
         img = self.experiment.get_waterfall_image()
@@ -353,30 +408,36 @@ class MeasurementWidget(QWidget, BaseView):
         self.stop_button.setFlat(True)
         self.stop_button.style().unpolish(self.stop_button)
         self.stop_button.style().polish(self.stop_button)
-        self.more_button.setFlat(False)
-        self.more_button.style().unpolish(self.more_button)
-        self.more_button.style().polish(self.more_button)
+        self.resume_button.setFlat(False)
+        self.resume_button.style().unpolish(self.resume_button)
+        self.resume_button.style().polish(self.resume_button)
+        self.change_button.setFlat(False)
+        self.change_button.style().unpolish(self.change_button)
+        self.change_button.style().polish(self.change_button)
         self.quit_button.setFlat(False)
         self.quit_button.style().unpolish(self.quit_button)
         self.quit_button.style().polish(self.quit_button)
 
     def parameters(self):
         if self.experiment.saving: return
+        self.experiment.active = True
         self.parameters_signal.emit()
 
-    def preferences(self):
+    def resume_measurement(self):
         if self.experiment.saving: return
-        self.experiment.aligned = False
-        self.preferences_signal.emit()
+        self.experiment.active = True
+        self.experiment.save_waterfall()
 
     def quit(self):
         if self.experiment.saving: return
+        self.experiment.active = True
         self.quit_signal.emit()
 
 
 class CloseWidget(QWidget, BaseView):
     '''Widget to do something'''
     close_signal = pyqtSignal()
+    preferences_signal = pyqtSignal()
 
     def __init__(self, experiment, parent=None):
         super(CloseWidget, self).__init__(parent=parent)
@@ -384,6 +445,11 @@ class CloseWidget(QWidget, BaseView):
         self.experiment = experiment
 
         self.close_button.clicked.connect(self.close)
+        self.new_button.clicked.connect(self.preferences)
+
+    def preferences(self):
+        self.experiment.aligned = False
+        self.preferences_signal.emit()
 
     def close(self):
         self.close_signal.emit()

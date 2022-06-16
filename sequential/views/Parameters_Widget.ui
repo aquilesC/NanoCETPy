@@ -99,17 +99,7 @@
           <height>100</height>
          </size>
         </property>
-        <layout class="QVBoxLayout" name="verticalLayout_3">
-         <property name="leftMargin">
-          <number>0</number>
-         </property>
-         <property name="topMargin">
-          <number>0</number>
-         </property>
-         <property name="rightMargin">
-          <number>0</number>
-         </property>
-        </layout>
+        <layout class="QVBoxLayout" name="verticalLayout_3"/>
        </widget>
       </item>
       <item>
