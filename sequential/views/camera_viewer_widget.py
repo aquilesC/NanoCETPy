@@ -8,7 +8,7 @@ import numpy as np
 import pyqtgraph as pg
 
 from PyQt5.QtCore import pyqtSignal, QTimer
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QRect
 from PyQt5.QtWidgets import QApplication, QWidget, QHBoxLayout, QAction, QVBoxLayout, QPushButton
 from pyqtgraph import GraphicsLayoutWidget
 
@@ -48,10 +48,13 @@ class CameraViewerWidget(DataViewWidget):
         self.img = pg.ImageItem()
         self.view.addItem(self.img)
         self.imv = pg.ImageView(view=self.view, imageItem=self.img)
-        self.imv.show()
+        
+        self.imv.ui.roiBtn.hide()
+        self.imv.ui.menuBtn.hide()
+        #self.imv.show()
         #self.view.enableAutoRange() # Change
 
-        self.scene().sigMouseClicked.connect(self.mouse_clicked)
+        #self.scene().sigMouseClicked.connect(self.mouse_clicked)
 
         # Add everything to the widget
         layout = self.get_layout()
@@ -91,18 +94,24 @@ class CameraViewerWidget(DataViewWidget):
             #self.img.setImage(image)
             #self.view.setRange(yRange=(0,image.shape[1]), padding=0)
             if self.first_image:
-                self.do_auto_range()
+
+                #self.do_auto_range()
                 
-                self.view.invertY(True)
-                self.view.setLimits(xMin=-image.shape[0]*0.05, xMax=image.shape[0]*1.05,
-                                    minXRange=1, maxXRange=image.shape[0],
-                                    yMin=-image.shape[1]*0.05, yMax=image.shape[1]*1.05,
-                                    minYRange=0.1*image.shape[1], maxYRange=4*image.shape[1])
-                self.view.setRange(yRange=(0,image.shape[1]), padding=0)
+                #self.view.invertY(True)
+                #self.view.setLimits(xMin=-image.shape[0]*0.05, xMax=image.shape[0]*1.05,
+                #                    minXRange=1, maxXRange=image.shape[0],
+                #                    yMin=-image.shape[1]*0.05, yMax=image.shape[1]*1.05,
+                #                    minYRange=0.1*image.shape[1], maxYRange=4*image.shape[1])
+                #self.view.setRange(yRange=(0,image.shape[1]), padding=0)
+                self.view.autoRange(padding=0)
                 self.first_image = False
             self.last_image = image
         else:
             self.logger.debug(f'No new image to update')
+    
+    def setup_roi_box(self):
+        self.roi_box = pg.ROI((0,0), size=self.last_image.shape, pen={'color': "FF0", 'width': 4}, rotatable=False, maxBounds=QRect(0,-10,self.last_image.shape[0],100*self.last_image.shape[1]))
+        self.view.addItem(self.roi_box)
 
     def setup_roi_lines(self, max_size=None):
         """Sets up the ROI lines surrounding the image.
