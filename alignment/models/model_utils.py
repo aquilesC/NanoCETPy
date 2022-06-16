@@ -1,4 +1,5 @@
 import numpy as np
+from scipy import ndimage
 
 def centroid(image):
     m00 = np.sum(image)

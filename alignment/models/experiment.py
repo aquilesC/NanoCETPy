@@ -43,10 +43,6 @@ class AlignmentSetup(Experiment):
     def initialize(self):
         self.initialize_cameras()
         self.initialize_electronics()
-        #self.logger.info('Starting free runs and continuous reads')
-        #time.sleep(1)
-        #self.camera.start_free_run()
-        #self.camera.continuous_reads()
 
     def initialize_cameras(self):
         """Assume a specific setup working with baslers and initialize both cameras"""
@@ -74,8 +70,8 @@ class AlignmentSetup(Experiment):
     def toggle_active(self):
         self.active = not self.active
     
-    def save_image(self):
-        filepath = 'recorded/line'+datetime.now().strftime('_%M_%S')+'.tiff'
+    def save_image(self, text):
+        filepath = 'recorded/'+text+'.tiff'
         io.imsave(filepath, self.display_image)
     
     @make_async_thread
@@ -92,29 +88,21 @@ class AlignmentSetup(Experiment):
         self.logger.info('TEST Starting Laser Alignment')
         self.active = True
         self.now = datetime.now()
-        # For testing purposes
-        self.electronics.fiber_led = 1
-        for i in range(4):
-            self.electronics.move_piezo(50,1,3) 
-            #time.sleep(.5)
-        self.update_camera(self.camera_fiber, self.config['laser_focusing']['high'])
-        # Change this
+        self.saving_images = True
+        
+        # Set camera mode
         if self.camera_fiber.continuous_reads_running: self.toggle_live(self.camera_fiber)
         if self.camera_microscope.continuous_reads_running: self.toggle_live(self.camera_microscope)
-        time.sleep(1)
-        # Toggle live
-        self.toggle_live(self.camera_fiber)
+        self.camera_fiber.acquisition_mode = self.camera_fiber.MODE_SINGLE_SHOT
+        self.camera_microscope.acquisition_mode = self.camera_microscope.MODE_SINGLE_SHOT
         # Set exposure and gain
-        time.sleep(5)
         self.update_camera(self.camera_fiber, self.config['laser_focusing']['low'])
         # Turn on Laser
         self.electronics.fiber_led = 0
+        self.electronics.top_led = 0
+        self.electronics.side_led = 0
         self.set_laser_power(1)
         # Find focus function
-            # WHILE not focus:
-                # Move piezo (how?) 
-                # check focus of laserf
-        time.sleep(.5)
         self.find_focus()
         self.logger.info('TEST focus done')
         # Turn off laser
@@ -123,42 +111,35 @@ class AlignmentSetup(Experiment):
         self.electronics.fiber_led = 1
         # Set exposure and gain
         self.update_camera(self.camera_fiber, self.config['laser_focusing']['high'])
-        #self.toggle_live(self.camera_fiber)
-        # Find center function
-            # find maximum
-        time.sleep(5)
-        fiber = ut.image_convolution(self.camera_fiber.temp_image, kernel = np.ones((3,3)))
-        mask = ut.gaussian2d_array((int(fiber.shape[0]/2),int(fiber.shape[1]/2)),10000,fiber.shape)
+
+        # Find center
+        self.camera_fiber.trigger_camera()
+        img = self.camera_fiber.read_camera()[-1]
+        fiber = ut.image_convolution(img, kernel = np.ones((3,3)))
+        mask = ut.gaussian2d_array((int(fiber.shape[0]/2),int(fiber.shape[1]/2)),20000,fiber.shape)
         fibermask = fiber * mask
         fiber_center = np.argwhere(fibermask==np.max(fibermask))[0]
-        tstring = self.now.strftime('_%M_%S')
-        io.imsave('recorded/fiber'+tstring+'.tiff', fiber)
-        #fiber_center = [454, 174] # for testing
+        if self.saving_images: io.imsave('recorded/fiber'+self.now.strftime('_%M_%S')+'.tiff', img)
         self.logger.info(f'TEST fiber center is {fiber_center}')
         self.processed_image = np.zeros((fiber.shape[0],fiber.shape[1],3))
         self.processed_image[:,:,2] = ut.to_uint8(fiber)
         self.processed_image[:,:,0]= ut.to_uint8(ut.gaussian2d_array(fiber_center,40,fiber.shape))
-        time.sleep(10)
         # Turn off LED
         self.electronics.fiber_led = 0
         # Set exposure and gain
         self.update_camera(self.camera_fiber, self.config['laser_focusing']['low'])
+        
         # Turn on Laser
         self.set_laser_power(1)
-        time.sleep(2)
+        time.sleep(.1)
         # Find alignment function
-            # WHILE not aligned:qwerasd
-                # find center to center distance 
-                # move mirror (PID?)
         self.align_laser_coarse(fiber_center)
-        time.sleep(5)
-        
-        self.toggle_live(self.camera_fiber)
-        self.toggle_live(self.camera_microscope)
+        time.sleep(.1)
         self.set_laser_power(99)
         self.update_camera(self.camera_microscope, self.config['microscope_focusing']['high'])
         time.sleep(1)
         self.align_laser_fine()
+        self.toggle_live(self.camera_microscope)
 
         self.logger.info('TEST Alignment done')
 
@@ -175,22 +156,17 @@ class AlignmentSetup(Experiment):
         self.logger.info('TEST start finding focus')
         direction = 0
         speed = 50
-        threshold = 28
-        self.logger.info('TEST 1')
-        img = self.camera_fiber.temp_image
-        #mask = img < 0
-        #mask[300:600,100:400] = True
-        #img = img * mask
+        self.camera_fiber.trigger_camera()
+        img = self.camera_fiber.read_camera()[-1]        
         self.processed_image = img
-        self.logger.info(f'TEST 2, {np.sum(img)}')
         val_new = np.sum(img > 0.8*np.max(img))
         while self.active:
             val_old = val_new
             self.logger.info(f'TEST moving with speed {speed} in direction {direction}')
             self.electronics.move_piezo(speed,direction,3)
-            time.sleep(.5)
-            img = self.camera_fiber.temp_image
-            #img = img * mask
+            time.sleep(.1)
+            self.camera_fiber.trigger_camera()
+            img = self.camera_fiber.read_camera()[-1]
             val_new = np.sum(img > 0.8*np.max(img))
             if val_old < val_new: 
                 direction = (direction + 1) % 2
@@ -212,7 +188,8 @@ class AlignmentSetup(Experiment):
             self.logger.info(f'TEST start aligning axis {axis} at index {idx}')
             direction = 0
             speed = 5
-            img = self.camera_fiber.temp_image
+            self.camera_fiber.trigger_camera()
+            img = self.camera_fiber.read_camera()[-1]
             mask = ut.gaussian2d_array(fiber_center,19000,img.shape)
             mask = mask > 0.66*np.max(mask)
             img = img * mask
@@ -228,7 +205,8 @@ class AlignmentSetup(Experiment):
                 self.logger.info(f'TEST moving with speed {speed} in direction {direction}')
                 self.electronics.move_piezo(speed,direction,axis)
                 time.sleep(.1)
-                img = self.camera_fiber.temp_image
+                self.camera_fiber.trigger_camera()
+                img = self.camera_fiber.read_camera()[-1]
                 img = img * mask
                 img = 1*(img>0.8*np.max(img))
                 lc = ut.centroid(img)
@@ -239,8 +217,8 @@ class AlignmentSetup(Experiment):
                     if speed == 1: break
                     speed = 1
             axis = self.config['electronics']['vertical_axis']
-        tstring = self.now.strftime('_%M_%S')
-        io.imsave('recorded/laser'+tstring+'.tiff', img)
+        
+        if self.saving_images: io.imsave('recorded/laser'+self.now.strftime('_%M_%S')+'.tiff', img)
 
     def align_laser_fine(self):
         """ Maximises the fiber core scattering signal seen on the microscope cam by computing the median along axis 0.
@@ -258,7 +236,8 @@ class AlignmentSetup(Experiment):
             self.logger.info(f'TEST start optimizing axis {axis}')
             check = False
             direction = 0
-            img = self.camera_microscope.temp_image
+            self.camera_microscope.trigger_camera()
+            img = self.camera_microscope.read_camera()[-1]
             self.processed_image = np.zeros((img.shape[0],img.shape[1],3))
             self.processed_image[:,:,2] = img
             median = np.median(img, axis=0)
@@ -269,8 +248,9 @@ class AlignmentSetup(Experiment):
             while self.active:
                 val_old = val_new
                 self.electronics.move_piezo(1,direction,axis)
-                time.sleep(.5)
-                img = self.camera_microscope.temp_image
+                time.sleep(.1)
+                self.camera_microscope.trigger_camera()
+                img = self.camera_microscope.read_camera()[-1]
                 median = np.median(img, axis=0)
                 val_new = np.max(median)/np.min(median)
                 pos = np.argwhere(median==np.max(median))[0,0]
@@ -283,6 +263,8 @@ class AlignmentSetup(Experiment):
                         break
                     check = True
             axis = self.config['electronics']['vertical_axis']
+        
+        if self.saving_images: io.imsave('recorded/line'+self.now.strftime('_%M_%S')+'.tiff', img)
 
     def process_laser(self):
         img = self.camera_fiber.temp_image
@@ -326,7 +308,7 @@ class AlignmentSetup(Experiment):
     @Action
     def set_fiber_ROI(self):
         width = 220
-        cx, cy = 520,480
+        cx, cy = 220,480
         new_roi = ((cy-width, 2*width), (cx-width, 2*width))
         self.camera_fiber.ROI = new_roi
         self.logger.info('ROI set up')
@@ -354,17 +336,27 @@ class AlignmentSetup(Experiment):
     @Action
     def toggle_laser(self):
         if self.electronics.scattering_laser == 0:
-            
             if self.display_camera == self.camera_fiber: 
                 self.update_camera(self.camera_fiber, self.config['laser_focusing']['low'])
                 self.electronics.scattering_laser = 1
             if self.display_camera == self.camera_microscope: 
                 self.update_camera(self.camera_microscope, self.config['microscope_focusing']['high'])
                 self.electronics.scattering_laser = 99
-        else: 
+        else:
             self.electronics.scattering_laser = 0
-            self.electronics.fiber_led = 1
-            self.update_camera(self.camera_fiber, self.config['laser_focusing']['high'])
+            if self.display_camera == self.camera_fiber:
+                self.electronics.fiber_led = 1
+                self.update_camera(self.camera_fiber, self.config['laser_focusing']['high'])
+            if self.display_camera == self.camera_microscope:
+                self.electronics.fiber_led = 0
+                self.update_camera(self.camera_microscope, self.config['microscope_focusing']['low'])
+
+    @Action
+    def toggle_top_led(self):
+        if self.electronics.top_led == 1:
+            self.electronics.top_led = 0
+        else:
+            self.electronics.top_led = 1
 
     def get_latest_image(self):
         if self.display_camera is not None: 
@@ -476,6 +468,9 @@ class CamSetup(Experiment):
         self.logger.info('Finalizing calibration experiment')
         if self.camera_fiber is not None:
             self.camera_fiber.finalize()
+            self.camera_microscope.finalize()
+        self.electronics.finalize()    
+        
 
         super(CamSetup, self).finalize()
         self.finalized = True
