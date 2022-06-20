@@ -16,7 +16,7 @@ if __name__ == "__main__":
     executor = experiment.initialize()
     while executor.running():
         time.sleep(.1)
-    #experiment.electronics.top_led = 0
+    experiment.electronics.top_led = 0
 
     app = QApplication([])
     cam_window = AlignmentWindow(experiment)

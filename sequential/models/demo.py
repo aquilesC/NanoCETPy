@@ -44,7 +44,10 @@ class DemoExperiment(Experiment):
     def focus_stop(self):
         pass
 
+    @Action
     def start_alignment(self):
+        time.sleep(1)
+        self.aligned = True
         pass
 
     def find_ROI(self):

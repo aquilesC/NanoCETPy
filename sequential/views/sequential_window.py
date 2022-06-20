@@ -322,8 +322,12 @@ class ParametersWidget(QWidget, BaseView):
         self.microscope_timer.timeout.connect(self.update_microscope_viewer)
 
         self.name_line.setText(str(self.experiment.config['info']['description']))
-        self.exp_line.setText(str(self.experiment.config['camera_microscope']['config']['exposure']))
+        expt = self.experiment.config['camera_microscope']['config']['exposure']
+        if expt[-2:] == 'ms': expt = int(expt[:-2])
+        elif expt[-2:] == 'us': expt = int(expt[:-2]) * 0.001
+        self.exp_line.setText(str(expt))
         self.gain_line.setText(str(self.experiment.config['camera_microscope']['config']['gain']))
+        self.laser_line.setText(str(self.experiment.config['laser']['power']))
         self.name_line.editingFinished.connect(self.update_parameters)
         self.exp_line.editingFinished.connect(self.update_parameters)
         self.exp_line.editingFinished.connect(self.update_parameters)
@@ -342,11 +346,11 @@ class ParametersWidget(QWidget, BaseView):
 
     def update_parameters(self):
         self.experiment.update_camera(self.experiment.camera_microscope, {
-            'exposure_time': Q_(self.exp_line.text()),
+            'exposure_time': Q_(self.exp_line.text()+'ms'),
             'gain': float(self.gain_line.text()),
         })
         self.experiment.config['info'].update({
-            'name': self.name_line.text()
+            'description': self.name_line.text()
         })
 
     def start(self):
@@ -427,6 +431,18 @@ class MeasurementWidget(QWidget, BaseView):
         if self.experiment.saving: return
         self.experiment.active = True
         self.experiment.save_waterfall()
+        self.stop_button.setFlat(False)
+        self.stop_button.style().unpolish(self.stop_button)
+        self.stop_button.style().polish(self.stop_button)
+        self.resume_button.setFlat(True)
+        self.resume_button.style().unpolish(self.resume_button)
+        self.resume_button.style().polish(self.resume_button)
+        self.change_button.setFlat(True)
+        self.change_button.style().unpolish(self.change_button)
+        self.change_button.style().polish(self.change_button)
+        self.quit_button.setFlat(True)
+        self.quit_button.style().unpolish(self.quit_button)
+        self.quit_button.style().polish(self.quit_button)
 
     def quit(self):
         if self.experiment.saving: return

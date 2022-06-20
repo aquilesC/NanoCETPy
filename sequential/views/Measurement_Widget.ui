@@ -145,7 +145,7 @@
          </font>
         </property>
         <property name="text">
-         <string>Fiber:</string>
+         <string>Fiber</string>
         </property>
        </widget>
       </item>
@@ -184,7 +184,7 @@
          </font>
         </property>
         <property name="text">
-         <string>Waterfall:</string>
+         <string>Waterfall</string>
         </property>
        </widget>
       </item>
