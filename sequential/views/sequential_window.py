@@ -147,7 +147,8 @@ class SequentialMainWindow(QMainWindow, BaseView):
 
     def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
         logger.info('Main Window Closed')
-        self.experiment.toggle_active()
+        self.experiment.active = False
+        self.experiment.finalize()
         super().closeEvent(a0)
 
 
@@ -209,17 +210,18 @@ class PreferencesWidget(QWidget, BaseView):
         super(PreferencesWidget, self).__init__(parent=parent)
         uic.loadUi(os.path.join(BASE_DIR_VIEW, 'Preferences_Widget.ui'), self)
         self.experiment = experiment
+        self.config = self.experiment.config['info'] # Does this work?
 
         self.apply_button.clicked.connect(self.apply)
         self.browse_button.clicked.connect(self.browse)
-        self.name_line.setText(str(self.experiment.config['user']['name']))
-        self.directory_box.addItem(self.experiment.config['info']['folder'])
-        self.directory_box.setCurrentIndex(self.directory_box.findText(self.experiment.config['info']['folder']))
+        self.name_line.setText(str(self.config['user']))
+        self.directory_box.addItem(self.config['files']['folder'])
+        self.directory_box.setCurrentIndex(self.directory_box.findText(self.config['files']['folder']))
 
     def apply(self):
         # handle config stuff and LEDs
-        self.experiment.config['info']['folder'] = self.directory_box.currentText()
-        self.experiment.config['user']['name'] = self.name_line.text()
+        self.config['files']['folder'] = self.directory_box.currentText()
+        self.config['user'] = self.name_line.text()
         self.focus_signal.emit()
     
     def browse(self):
@@ -321,13 +323,13 @@ class ParametersWidget(QWidget, BaseView):
         self.microscope_timer = QTimer()
         self.microscope_timer.timeout.connect(self.update_microscope_viewer)
 
-        self.name_line.setText(str(self.experiment.config['info']['description']))
+        self.name_line.setText(str(self.experiment.config['info']['files']['description']))
         expt = self.experiment.config['camera_microscope']['config']['exposure']
         if expt[-2:] == 'ms': expt = int(expt[:-2])
         elif expt[-2:] == 'us': expt = int(expt[:-2]) * 0.001
         self.exp_line.setText(str(expt))
         self.gain_line.setText(str(self.experiment.config['camera_microscope']['config']['gain']))
-        self.laser_line.setText(str(self.experiment.config['laser']['power']))
+        self.laser_line.setText(str(self.experiment.config['electronics']['laser']['power']))
         self.name_line.editingFinished.connect(self.update_parameters)
         self.exp_line.editingFinished.connect(self.update_parameters)
         self.exp_line.editingFinished.connect(self.update_parameters)
@@ -349,7 +351,7 @@ class ParametersWidget(QWidget, BaseView):
             'exposure_time': Q_(self.exp_line.text()+'ms'),
             'gain': float(self.gain_line.text()),
         })
-        self.experiment.config['info'].update({
+        self.experiment.config['info']['files'].update({
             'description': self.name_line.text()
         })
 

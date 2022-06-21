@@ -2,6 +2,7 @@ import numpy as np
 import time
 from skimage import io
 import os
+import yaml
 BASE_DIR_VIEW = os.path.dirname(os.path.abspath(__file__))
 
 from experimentor.models.action import Action
@@ -63,6 +64,10 @@ class DemoExperiment(Experiment):
             time.sleep(.1)
         self.saving=False
         pass
+
+    def finalize(self):
+        with open('config_user.yml', 'w') as f:
+            yaml.dump(self.config, f, default_flow_style=False)
 
 class DemoCam:
     def __init__(self):

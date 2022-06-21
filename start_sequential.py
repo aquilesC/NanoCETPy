@@ -2,6 +2,7 @@ import logging
 import time
 import sys
 import os
+BASE_DIR_VIEW = os.path.dirname(os.path.abspath(__file__))
 
 import yaml
 from PyQt5.QtCore import Qt
@@ -19,10 +20,9 @@ if __name__ == "__main__":
         experiment = DemoExperiment()
     else:
         experiment = MainSetup()
-    experiment.load_configuration('dispertech_test.yml', yaml.UnsafeLoader)
-    #executor = experiment.initialize()
-    #while executor.running():
-    #    time.sleep(.1)
+    if os.path.isfile(os.path.join(BASE_DIR_VIEW, 'config_user.yml')): config_filepath = 'config_user.yml'
+    else: config_filepath = 'config_default.yml'
+    experiment.load_configuration(config_filepath, yaml.UnsafeLoader)
 
     #QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
     #QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
