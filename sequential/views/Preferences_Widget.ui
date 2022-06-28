@@ -163,15 +163,12 @@
      <item>
       <layout class="QHBoxLayout" name="horizontalLayout" stretch="3,0,0">
        <item>
-        <widget class="QComboBox" name="directory_box">
+        <widget class="QLineEdit" name="directory_line">
          <property name="minimumSize">
           <size>
            <width>0</width>
            <height>35</height>
           </size>
-         </property>
-         <property name="styleSheet">
-          <string notr="true"/>
          </property>
         </widget>
        </item>
@@ -234,6 +231,12 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>name_line</tabstop>
+  <tabstop>directory_line</tabstop>
+  <tabstop>browse_button</tabstop>
+  <tabstop>apply_button</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

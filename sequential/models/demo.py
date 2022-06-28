@@ -19,7 +19,7 @@ class DemoExperiment(Experiment):
         self.electronics = DemoElectronics()
         self.aligned = True
         self.active = True
-        self.saving = True
+        self.saving = False
         self.microscope_image = io.imread(os.path.join(BASE_DIR_VIEW, 'mic_demo.png'), as_gray=True)
         self.waterfall_image = io.imread(os.path.join(BASE_DIR_VIEW, 'wat_demo.png'), as_gray=True)
         self.logger.info(f'SHAPES {self.microscope_image.shape}, {self.waterfall_image.shape}')
@@ -42,7 +42,7 @@ class DemoExperiment(Experiment):
     def get_waterfall_image(self):
         return self.waterfall_image.T
 
-    def focus_stop(self):
+    def focus_stop(self, ROI):
         pass
 
     @Action

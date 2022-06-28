@@ -7,7 +7,7 @@ BASE_DIR_VIEW = os.path.dirname(os.path.abspath(__file__))
 
 from PyQt5 import uic, QtGui
 from PyQt5.QtCore import QTimer, pyqtSignal, pyqtSlot, QDir, Qt
-from PyQt5.QtWidgets import QMainWindow, QStatusBar, QWidget, QFileDialog, QMenu, QLabel, QSizePolicy, QApplication
+from PyQt5.QtWidgets import QMainWindow, QStatusBar, QWidget, QFileDialog, QMenu, QLabel, QSizePolicy, QApplication, QMessageBox
 
 from experimentor import Q_
 from experimentor.lib.log import get_logger
@@ -146,6 +146,16 @@ class SequentialMainWindow(QMainWindow, BaseView):
             if widget: widget.deleteLater()
 
     def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
+        if self.experiment.saving:
+            msg = QMessageBox(parent=self)
+            msg.setWindowTitle('Warning!')
+            msg.setText("The experiment is still running. Do you really want to quit?")
+            msg.setIcon(QMessageBox.Warning)
+            msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+            return_val = msg.exec()
+            if return_val == QMessageBox.Cancel:
+                a0.ignore()
+                return
         logger.info('Main Window Closed')
         self.experiment.active = False
         self.experiment.finalize()
@@ -215,12 +225,17 @@ class PreferencesWidget(QWidget, BaseView):
         self.apply_button.clicked.connect(self.apply)
         self.browse_button.clicked.connect(self.browse)
         self.name_line.setText(str(self.config['user']))
-        self.directory_box.addItem(self.config['files']['folder'])
-        self.directory_box.setCurrentIndex(self.directory_box.findText(self.config['files']['folder']))
+        self.directory_line.setText(self.config['files']['folder'])
+        #self.directory_box.setCurrentIndex(self.directory_box.findText(self.config['files']['folder']))
 
     def apply(self):
         # handle config stuff and LEDs
-        self.config['files']['folder'] = self.directory_box.currentText()
+        if not os.path.isdir(self.directory_line.text()):
+            msg = QMessageBox(parent=self)
+            msg.setText("Please enter a valid directory")
+            msg.exec()
+            return
+        self.config['files']['folder'] = self.directory_line.text()
         self.config['user'] = self.name_line.text()
         self.focus_signal.emit()
     
@@ -228,11 +243,12 @@ class PreferencesWidget(QWidget, BaseView):
         directory = QDir.toNativeSeparators(QFileDialog.getExistingDirectory(
             self,
             'Select Saving directory',
-            self.directory_box.currentText()))
-        if len(directory) == 0: return
-        if self.directory_box.findText(directory) == -1:
-            self.directory_box.addItem(directory)
-        self.directory_box.setCurrentIndex(self.directory_box.findText(directory))
+            self.directory_line.text()))
+        self.directory_line.setText(directory)
+        #if len(directory) == 0: return
+        #if self.directory_box.findText(directory) == -1:
+        #    self.directory_box.addItem(directory)
+        #self.directory_box.setCurrentIndex(self.directory_box.findText(directory))
 
 
 class FocusWidget(QWidget, BaseView):
@@ -285,7 +301,9 @@ class FocusWidget(QWidget, BaseView):
         except:
             return
         self.status_signal.emit('Aligning laser to fiber center...')
-        self.experiment.focus_stop()
+        pos = self.microscope_viewer.roi_box.pos()
+        size = self.microscope_viewer.roi_box.size()
+        self.experiment.focus_stop(((pos[0],size[0]),(pos[1], size[1]))) # externalize this
         self.experiment.start_alignment()
         self.check_timer = QTimer()
         self.check_timer.timeout.connect(self.check_alignment)
@@ -300,10 +318,11 @@ class FocusWidget(QWidget, BaseView):
             self.continue_button.style().unpolish(self.continue_button)
             self.continue_button.style().polish(self.continue_button)
             self.check_timer.stop()
+            self.experiment.find_ROI()
 
     def parameters(self):
         if not self.experiment.aligned: return
-        self.experiment.find_ROI()
+        
         self.status_signal.emit(' ')
         self.parameters_signal.emit()
 

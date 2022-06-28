@@ -280,6 +280,13 @@
    </item>
   </layout>
  </widget>
+ <tabstops>
+  <tabstop>name_line</tabstop>
+  <tabstop>laser_line</tabstop>
+  <tabstop>exp_line</tabstop>
+  <tabstop>gain_line</tabstop>
+  <tabstop>start_button</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>
