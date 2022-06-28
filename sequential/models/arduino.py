@@ -21,10 +21,13 @@ class ArduinoNanoCET(ArduinoModel):
         super().__init__(port=port, device=device, baud_rate=baud_rate, initial_config=initial_config)
         self.logger = get_logger(__name__)
         self.initialized = False
+        self.initializing = False
 
     @make_async_thread
     def initialize(self):
         with self.query_lock:
+            if self.initialized: return
+            self.initializing = True
             if self.port:
                 try:
                     if not self.port:
