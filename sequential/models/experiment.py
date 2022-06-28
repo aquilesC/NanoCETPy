@@ -147,9 +147,17 @@ class MainSetup(Experiment):
         # Find center
         self.camera_fiber.trigger_camera()
         img = self.camera_fiber.read_camera()[-1]
-        fiber = ut.image_convolution(img, kernel = np.ones((3,3)))
-        mask = ut.gaussian2d_array((int(fiber.shape[0]/2),int(fiber.shape[1]/2)),20000,fiber.shape)
-        fibermask = fiber * mask
+        
+        #fiber = ut.image_convolution(img, kernel = np.ones((3,3)))
+        #mask = ut.gaussian2d_array((int(fiber.shape[0]/2),int(fiber.shape[1]/2)),20000,fiber.shape)
+        #fibermask = fiber * mask
+
+        ksize = 15
+        kernel = ut.circle2d_array((int(ksize/2), int(ksize/2)), 5, (ksize,ksize)) * 1.01 
+        kernel = (kernel - np.mean(kernel)) / np.std(kernel)
+        fiber = (img - np.mean(img)) / np.std(img)
+        fibermask = ut.image_convolution(fiber, kernel=kernel)
+
         fiber_center = np.argwhere(fibermask==np.max(fibermask))[0]
         if self.saving_images: io.imsave('recorded/fiber'+self.now.strftime('_%M_%S')+'.tiff', img)
         self.logger.info(f'TEST fiber center is {fiber_center}')
