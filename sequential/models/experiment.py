@@ -77,8 +77,9 @@ class MainSetup(Experiment):
                     self.logger.info('Init Exception camera_microscope:', exc_info=True)
             if not initialized[2]:
                 try:
-                    self.electronics.initialize()
+                    if not self.electronics.initializing: self.electronics.initialize()
                 except:
+                    self.electronics.initializing = False 
                     self.logger.info('Init Exception electronics:', exc_info=True)
         self.logger.info('TEST init loop exit')
             
@@ -88,13 +89,13 @@ class MainSetup(Experiment):
     def focus_start(self):
         self.camera_fiber.ROI = self.camera_fiber.config['ROI'] 
         self.camera_microscope.ROI = self.camera_microscope.config['ROI']      
-        self.toggle_live(self.camera_microscope)
+        self.set_live(self.camera_microscope, True)
         self.update_camera(self.camera_microscope, self.config['defaults']['microscope_focusing']['low'])
         self.electronics.top_led = 1
 
     def focus_stop(self):
         if self.camera_microscope.continuous_reads_running:
-            self.toggle_live(self.camera_microscope)
+            self.set_live(self.camera_microscope, False)
         self.electronics.top_led = 0
     
     @make_async_thread
@@ -122,8 +123,8 @@ class MainSetup(Experiment):
             return
 
         # Set camera mode
-        if self.camera_fiber.continuous_reads_running: self.toggle_live(self.camera_fiber)
-        if self.camera_microscope.continuous_reads_running: self.toggle_live(self.camera_microscope)
+        self.set_live(self.camera_fiber, False)
+        self.set_live(self.camera_microscope, False)
         self.camera_fiber.acquisition_mode = self.camera_fiber.MODE_SINGLE_SHOT
         self.camera_microscope.acquisition_mode = self.camera_microscope.MODE_SINGLE_SHOT
         # Set exposure and gain
@@ -167,7 +168,8 @@ class MainSetup(Experiment):
         self.update_camera(self.camera_microscope, self.config['defaults']['microscope_focusing']['high'])
         time.sleep(1)
         self.align_laser_fine()
-        self.toggle_live(self.camera_microscope)
+        self.set_live(self.camera_microscope, True)
+        self.aligned = True
 
         self.logger.info('TEST Alignment done')
 
@@ -293,7 +295,7 @@ class MainSetup(Experiment):
         #self.snap_image(self.camera_microscope)
         #time.sleep(1)
         img = self.camera_microscope.temp_image
-        self.toggle_live(self.camera_microscope)
+        self.set_live(self.camera_microscope, False)
         while self.camera_microscope.continuous_reads_running:
             time.sleep(.1)
         self.logger.info(f'TEST imgshape {img.shape}')
@@ -320,7 +322,7 @@ class MainSetup(Experiment):
         self.camera_microscope.ROI = new_roi
         self.logger.info(f'ROI set up with width {width}')
 
-        self.toggle_live(self.camera_microscope)
+        self.set_live(self.camera_microscope, True)
 
     @make_async_thread
     def save_waterfall(self):
@@ -384,14 +386,16 @@ class MainSetup(Experiment):
         self.logger.info('Snap Image complete')
 
     @Action    
-    def toggle_live(self, camera):
+    def set_live(self, camera, live):
         self.logger.info(f'Toggle live on {camera}')
         if camera.continuous_reads_running:
+            if live: return
             camera.stop_continuous_reads()
             camera.stop_free_run()
             self.logger.info('Continuous reads ended')
             self.display_camera = None
         else:
+            if not live: return
             camera.start_free_run()
             camera.continuous_reads()
             self.display_camera = camera
