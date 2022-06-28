@@ -115,9 +115,16 @@ class AlignmentSetup(Experiment):
         # Find center
         self.camera_fiber.trigger_camera()
         img = self.camera_fiber.read_camera()[-1]
-        fiber = ut.image_convolution(img, kernel = np.ones((3,3)))
-        mask = ut.gaussian2d_array((int(fiber.shape[0]/2),int(fiber.shape[1]/2)),20000,fiber.shape)
-        fibermask = fiber * mask
+
+        #fiber = ut.image_convolution(img, kernel = np.ones((3,3)))
+        #mask = ut.gaussian2d_array((int(fiber.shape[0]/2),int(fiber.shape[1]/2)),20000,fiber.shape)
+        #fibermask = fiber * mask
+        ksize = 15
+        kernel = ut.circle2d_array((int(ksize/2), int(ksize/2)), 5, (ksize,ksize)) * 1.01 
+        kernel = (kernel - np.mean(kernel)) / np.std(kernel)
+        fiber = (img - np.mean(img)) / np.std(img)
+        fibermask = ut.image_convolution(fiber, kernel=kernel)
+
         fiber_center = np.argwhere(fibermask==np.max(fibermask))[0]
         if self.saving_images: io.imsave('recorded/fiber'+self.now.strftime('_%M_%S')+'.tiff', img)
         self.logger.info(f'TEST fiber center is {fiber_center}')
@@ -171,7 +178,7 @@ class AlignmentSetup(Experiment):
             if val_old < val_new: 
                 direction = (direction + 1) % 2
                 speed -= 5
-            if speed == 20: return
+            if speed <= 20: return
     
     def align_laser_coarse(self, fiber_center):
         """ Aligns the focussed laser beam to the previously detected center of the fiber.
@@ -305,12 +312,14 @@ class AlignmentSetup(Experiment):
             self.display_camera = camera
             self.logger.info('Continuous reads started')
 
-    @Action
-    def set_fiber_ROI(self):
-        width = 220
-        cx, cy = 220,480
-        new_roi = ((cy-width, 2*width), (cx-width, 2*width))
-        self.camera_fiber.ROI = new_roi
+    def set_fiber_ROI(self, ROI):
+        #width = 220
+        #cx, cy = 220,480
+        #new_roi = ((cy-width, 2*width), (cx-width, 2*width))
+        self.toggle_live(self.camera_fiber)
+        while self.camera_fiber.continuous_reads_running: time.sleep(.1)
+        self.camera_fiber.ROI = ROI
+        self.toggle_live(self.camera_fiber)
         self.logger.info('ROI set up')
 
     def update_camera(self, camera, new_config):
@@ -339,9 +348,11 @@ class AlignmentSetup(Experiment):
             if self.display_camera == self.camera_fiber: 
                 self.update_camera(self.camera_fiber, self.config['laser_focusing']['low'])
                 self.electronics.scattering_laser = 1
+                self.electronics.fiber_led = 0
             if self.display_camera == self.camera_microscope: 
                 self.update_camera(self.camera_microscope, self.config['microscope_focusing']['high'])
                 self.electronics.scattering_laser = 99
+                self.electronics.fiber_led = 0
         else:
             self.electronics.scattering_laser = 0
             if self.display_camera == self.camera_fiber:
@@ -391,6 +402,8 @@ class AlignmentSetup(Experiment):
         self.camera_fiber.finalize()
         self.camera_microscope.finalize()
         self.set_laser_power(0)
+        self.electronics.top_led = 0
+        self.electronics.fiber_led = 0
         self.electronics.finalize()
 
         super(AlignmentSetup, self).finalize()
