@@ -303,7 +303,8 @@ class FocusWidget(QWidget, BaseView):
         self.status_signal.emit('Aligning laser to fiber center...')
         pos = self.microscope_viewer.roi_box.pos()
         size = self.microscope_viewer.roi_box.size()
-        self.experiment.focus_stop(((pos[0],size[0]),(pos[1], size[1]))) # externalize this
+        self.experiment.focus_stop()
+        self.experiment.camera_microscope.ROI = ((pos[0],size[0]),(pos[1], size[1]))
         self.experiment.start_alignment()
         self.check_timer = QTimer()
         self.check_timer.timeout.connect(self.check_alignment)
