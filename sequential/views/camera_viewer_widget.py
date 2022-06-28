@@ -110,7 +110,8 @@ class CameraViewerWidget(DataViewWidget):
             self.logger.debug(f'No new image to update')
     
     def setup_roi_box(self):
-        self.roi_box = pg.ROI((0,0), size=self.last_image.shape, pen={'color': "FF0", 'width': 4}, rotatable=False, maxBounds=QRect(0,-10,self.last_image.shape[0],100*self.last_image.shape[1]))
+        shape = self.last_image.shape
+        self.roi_box = pg.ROI((0,0), size=(shape[0], 100), pen={'color': "FF0", 'width': 4}, rotatable=False, maxBounds=QRect(0,-10,shape[0],100*shape[1]))
         self.view.addItem(self.roi_box)
 
     def setup_roi_lines(self, max_size=None):

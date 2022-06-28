@@ -42,7 +42,7 @@ class DemoExperiment(Experiment):
     def get_waterfall_image(self):
         return self.waterfall_image.T
 
-    def focus_stop(self, ROI):
+    def focus_stop(self):
         pass
 
     @Action
