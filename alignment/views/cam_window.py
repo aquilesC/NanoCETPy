@@ -1,3 +1,4 @@
+from ast import AsyncFunctionDef
 import os
 import time
 import numpy as np
@@ -7,6 +8,7 @@ BASE_DIR_VIEW = os.path.dirname(os.path.abspath(__file__))
 from PyQt5 import uic, QtGui
 from PyQt5.QtCore import QTimer
 from PyQt5.QtWidgets import QMainWindow, QStatusBar
+import pyqtgraph as pg
 
 from experimentor import Q_
 from experimentor.lib.log import get_logger
@@ -37,7 +39,8 @@ class AlignmentWindow(QMainWindow, BaseView):
         self.connect_to_action(self.live_button.clicked, lambda: self.experiment.toggle_live(self.experiment.camera_fiber))
         self.connect_to_action(self.live_button_2.clicked, lambda: self.experiment.toggle_live(self.experiment.camera_microscope))
         self.connect_to_action(self.laser_button.clicked, self.experiment.toggle_laser)
-        self.connect_to_action(self.ROI_button.clicked, self.experiment.set_fiber_ROI)
+        self.ROI_button.clicked.connect(self.setROI)
+        self.camera_viewer.roi_box = None
         self.connect_to_action(self.topled_button.clicked, self.experiment.toggle_top_led)
         self.stop_button.clicked.connect(self.experiment.toggle_active)
         self.linesave_button.clicked.connect(lambda: self.experiment.save_image(self.save_edit.text()))
@@ -84,6 +87,19 @@ class AlignmentWindow(QMainWindow, BaseView):
 
     def move_piezo(self, speed, direction, axis):
         self.experiment.electronics.move_piezo(speed, direction, axis)
+
+    def setROI(self):
+        if self.camera_viewer.roi_box:
+            logger.info('ROI if')
+            pos = self.camera_viewer.roi_box.pos()
+            size = self.camera_viewer.roi_box.size()
+            self.camera_viewer.view.removeItem(self.camera_viewer.roi_box)
+            self.camera_viewer.roi_box = None
+            self.experiment.set_fiber_ROI(((pos[0],size[0]),(pos[1], size[1])))
+        else:
+            logger.info('ROI else')
+            self.camera_viewer.roi_box = pg.ROI((0,0), size=(400,400), pen={'color': "FF0", 'width': 4}, rotatable=False, resizable=True)
+            self.camera_viewer.view.addItem(self.camera_viewer.roi_box)
 
     def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
         logger.info('Alignment Window Closed')
