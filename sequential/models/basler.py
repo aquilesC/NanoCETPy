@@ -50,4 +50,10 @@ class BaslerNanoCET(BaslerCamera):
             self.config.apply_all()
         self.initialized = True
 
+    def clear_ROI(self):
+        self._driver.OffsetX.SetValue(0)
+        self._driver.OffsetY.SetValue(0)
+        self._driver.Width.SetValue(self._driver.WidthMax.GetValue())
+        self._driver.Height.SetValue((self._driver.HeightMax.GetValue()))
+
 

@@ -1,0 +1,7 @@
+ISSUES OF SEQUENTIAL INTERFACE
+
+
+- what happens when you go back to Focus and alignment screen
+- when you go back anywhere from closing screen
+- sporadic read_camera index out of range error
+- how to handle parameters out of range entries

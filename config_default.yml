@@ -18,7 +18,7 @@ GUI:
 
 electronics:
   arduino:
-    port: 'ASRL4::INSTR'
+    port: #'ASRL4::INSTR'
     baud_rate: 115200
   vertical_axis: 2
   horizontal_axis: 1
@@ -65,7 +65,7 @@ camera_microscope:
 defaults:
   fiber_center: # fiber core on camera_fiber
   microscope_center: # fiber core on camera_microscope (a line)
-  core_width: # width of crop around fiber core on camera_microscope
+  core_width: 30 # width of crop around fiber core on camera_microscope
   laser_focusing:
     high:
       exposure: 100ms # originally 100ms

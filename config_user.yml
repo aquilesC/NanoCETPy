@@ -38,7 +38,7 @@ camera_microscope:
   model_camera: ACE
 defaults:
   alignment: null
-  core_width: null
+  core_width: 30
   fiber_center: null
   laser_focusing:
     high:
@@ -58,11 +58,11 @@ defaults:
 electronics:
   arduino:
     baud_rate: 115200
-    port: ASRL4::INSTR
+    port: null
   focus_axis: 3
   horizontal_axis: 1
   laser:
-    power: 0
+    power: 99
   led_fiber: 2
   led_initialising: 5
   led_power: 3
@@ -73,8 +73,8 @@ electronics:
   vertical_axis: 2
 info:
   files:
-    description: null
+    description: None
     filename: Waterfall_{description}_{i}.h5
-    folder: C:\Users\Jakob Schroeder\Code\NanoCETPy\recorded
+    folder: C:\Users\Jakob\Code\NanoCETPy\recorded
     max_memory: 2500
-  user: Jakob
+  user: Matthijs

@@ -42,7 +42,7 @@ class MainSetup(Experiment):
         self.aligned = False
         
         self.demo_image = data.colorwheel()
-        self.waterfall_image = self.demo_image
+        self.waterfall_image = np.array([[0,2**12-1],[0,2**8-1]])
         self.display_image = self.demo_image
         self.active = True
         self.now = None
@@ -62,7 +62,7 @@ class MainSetup(Experiment):
 
         #Loop over instances until all are initialized
         while self.active:
-            self.logger.info('TEST init loop')
+            #self.logger.info('TEST init loop')
             initialized = [self.camera_fiber.initialized, self.camera_microscope.initialized, self.electronics.initialized]
             if all(initialized): return
             if not initialized[0]: 
@@ -82,20 +82,20 @@ class MainSetup(Experiment):
                     self.electronics.initializing = False 
                     self.logger.info('Init Exception electronics:', exc_info=True)
         self.logger.info('TEST init loop exit')
-            
-    def toggle_active(self):
-        self.active = not self.active
 
     def focus_start(self):
-        self.camera_fiber.ROI = self.camera_fiber.config['ROI'] 
-        self.camera_microscope.ROI = self.camera_microscope.config['ROI']      
+        self.set_live(self.camera_microscope, False)
+        self.set_live(self.camera_fiber, False)
+        while self.camera_microscope.free_run_running: time.sleep(.1)
+        time.sleep(.1)
+        self.camera_fiber.clear_ROI()
+        self.camera_microscope.clear_ROI()
         self.set_live(self.camera_microscope, True)
         self.update_camera(self.camera_microscope, self.config['defaults']['microscope_focusing']['low'])
         self.electronics.top_led = 1
 
     def focus_stop(self):
-        if self.camera_microscope.continuous_reads_running:
-            self.set_live(self.camera_microscope, False)
+        self.set_live(self.camera_microscope, False)
         self.electronics.top_led = 0
     
     @make_async_thread
@@ -112,7 +112,7 @@ class MainSetup(Experiment):
         self.logger.info('TEST Starting Laser Alignment')
         self.active = True
         self.now = datetime.now()
-        self.saving_images = False
+        self.saving_images = True
 
         if False: # TESTING
             time.sleep(5)
@@ -294,22 +294,23 @@ class MainSetup(Experiment):
         if self.saving_images: io.imsave('recorded/line'+self.now.strftime('_%M_%S')+'.tiff', img)
 
     @make_async_thread
-    def find_ROI(self):
+    def find_ROI(self, crop=False):
         """Assuming alignment, this function fits a gaussian to the microscope images cross section to compute an ROI
         """
-        self.update_camera(self.camera_microscope, self.config['microscope_focusing']['high'])
+        self.update_camera(self.camera_microscope, self.config['defaults']['microscope_focusing']['high'])
         self.set_laser_power(99)
-        #time.sleep(1)
-        #self.snap_image(self.camera_microscope)
-        #time.sleep(1)
         img = self.camera_microscope.temp_image
         self.set_live(self.camera_microscope, False)
         while self.camera_microscope.continuous_reads_running:
             time.sleep(.1)
         self.logger.info(f'TEST imgshape {img.shape}')
         measure = np.sum(img, axis=0)
-        cx = np.argwhere(measure == np.max(measure))[0][0]
-        measure = measure[cx-100:cx+100]
+        argmax_measure = np.argwhere(measure == np.max(measure))[0][0]
+        if crop: 
+            cx = argmax_measure
+            measure = measure[cx-100:cx+101]
+            argmax_measure = 101
+        else: cx = int(measure.shape[0] / 2)
         measure = measure / np.max(measure)
         xvals = np.linspace(0,1,measure.shape[0]) - 0.5
         gaussian1d = lambda x, mean, var, A, bg: A * np.exp(-(x-mean)**2 / (2 *var)) + bg
@@ -317,7 +318,7 @@ class MainSetup(Experiment):
             gaussian1d, 
             xvals, 
             measure, 
-            p0=[0, 0.1, np.max(measure)-np.min(measure), np.min(measure)],
+            p0=[argmax_measure/measure.shape[0] - 0.5, 0.1, np.max(measure)-np.min(measure), np.min(measure)],
             bounds=([-0.5,0,0,0],[0.5,1,1,1]))
         self.logger.info(f'TEST {popt}')
         cx += int(popt[0] * measure.shape[0])
@@ -326,7 +327,7 @@ class MainSetup(Experiment):
         width = self.config['defaults']['core_width']  
 
         current_roi = self.camera_microscope.ROI
-        new_roi = (current_roi[0], (cx-width, 2*width))
+        new_roi = (current_roi[0], (current_roi[1][0]+cx-width, 2*width))
         self.camera_microscope.ROI = new_roi
         self.logger.info(f'ROI set up with width {width}')
 
@@ -395,7 +396,8 @@ class MainSetup(Experiment):
 
     @Action    
     def set_live(self, camera, live):
-        self.logger.info(f'Toggle live on {camera}')
+        logstring = {True: "Turn on", False: "Turn off"}
+        self.logger.info(f'{logstring[live]} live feed on {camera}')
         if camera.continuous_reads_running:
             if live: return
             camera.stop_continuous_reads()

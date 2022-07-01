@@ -95,7 +95,7 @@ class CameraViewerWidget(DataViewWidget):
             #self.view.setRange(yRange=(0,image.shape[1]), padding=0)
             if self.first_image:
 
-                #self.do_auto_range()
+                self.do_auto_range()
                 
                 #self.view.invertY(True)
                 #self.view.setLimits(xMin=-image.shape[0]*0.05, xMax=image.shape[0]*1.05,

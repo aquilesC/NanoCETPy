@@ -136,9 +136,9 @@ class SequentialMainWindow(QMainWindow, BaseView):
 
     @pyqtSlot(str)
     def label_redirect(self, label_text):
-        #if not self.experiment.saving: 
-        self.logger.info('TEST redirect')
-        self.label_redirect_dict[label_text]()
+        if not self.experiment.saving: 
+            self.logger.info('TEST redirect')
+            self.label_redirect_dict[label_text]()
 
     def clear_main_widget(self):
         for i in reversed(range(self.main_widget.layout().count())):
@@ -277,7 +277,7 @@ class FocusWidget(QWidget, BaseView):
         self.microscope_timer.start(50)
 
     def update_microscope_viewer(self):
-        img = self.experiment.get_latest_image()
+        img = self.experiment.camera_microscope.temp_image #self.experiment.get_latest_image()
         if img is not None: self.microscope_viewer.update_image(img)
         if not self.resized: 
             self.resize(self.width()+1, self.height()+1)
@@ -304,7 +304,9 @@ class FocusWidget(QWidget, BaseView):
         pos = self.microscope_viewer.roi_box.pos()
         size = self.microscope_viewer.roi_box.size()
         self.experiment.focus_stop()
-        self.experiment.camera_microscope.ROI = ((pos[0],size[0]),(pos[1], size[1]))
+        time.sleep(1)
+        current_roi = self.experiment.camera_microscope.ROI
+        self.experiment.camera_microscope.ROI = (current_roi[0],(pos[1], size[1]))
         self.experiment.start_alignment()
         self.check_timer = QTimer()
         self.check_timer.timeout.connect(self.check_alignment)
@@ -320,6 +322,8 @@ class FocusWidget(QWidget, BaseView):
             self.continue_button.style().polish(self.continue_button)
             self.check_timer.stop()
             self.experiment.find_ROI()
+            self.microscope_viewer.do_auto_range()
+            self.resized = False
 
     def parameters(self):
         if not self.experiment.aligned: return
@@ -352,12 +356,14 @@ class ParametersWidget(QWidget, BaseView):
         self.laser_line.setText(str(self.experiment.config['electronics']['laser']['power']))
         self.name_line.editingFinished.connect(self.update_parameters)
         self.exp_line.editingFinished.connect(self.update_parameters)
-        self.exp_line.editingFinished.connect(self.update_parameters)
+        self.gain_line.editingFinished.connect(self.update_parameters)
+        self.laser_line.editingFinished.connect(self.update_parameters)
 
         self.start_button.clicked.connect(self.start)
 
         self.resized = False
         self.microscope_timer.start(50)
+        self.update_parameters()
 
     def update_microscope_viewer(self):
         img = self.experiment.get_latest_image()
@@ -368,12 +374,13 @@ class ParametersWidget(QWidget, BaseView):
 
     def update_parameters(self):
         self.experiment.update_camera(self.experiment.camera_microscope, {
-            'exposure_time': Q_(self.exp_line.text()+'ms'),
+            'exposure': Q_(self.exp_line.text()+'ms'),
             'gain': float(self.gain_line.text()),
         })
         self.experiment.config['info']['files'].update({
             'description': self.name_line.text()
         })
+        self.experiment.set_laser_power(int(self.laser_line.text()))
 
     def start(self):
         self.experiment.active = True
