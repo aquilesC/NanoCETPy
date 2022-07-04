@@ -1,4 +1,5 @@
 from cProfile import label
+from distutils.command.config import config
 import os
 import time
 import numpy as np
@@ -222,6 +223,10 @@ class PreferencesWidget(QWidget, BaseView):
         self.experiment = experiment
         self.config = self.experiment.config['info'] # Does this work?
 
+        instructive_gif = QtGui.QMovie(os.path.join(BASE_DIR_VIEW, 'insert_cartridge.gif')) 
+        self.picture_label.setMovie(instructive_gif)
+        instructive_gif.start()
+        self.helptext_label.setWordWrap(True)
         self.apply_button.clicked.connect(self.apply)
         self.browse_button.clicked.connect(self.browse)
         self.name_line.setText(str(self.config['user']))
@@ -277,7 +282,7 @@ class FocusWidget(QWidget, BaseView):
         self.microscope_timer.start(50)
 
     def update_microscope_viewer(self):
-        img = self.experiment.camera_microscope.temp_image #self.experiment.get_latest_image()
+        img = self.experiment.get_latest_image()
         if img is not None: self.microscope_viewer.update_image(img)
         if not self.resized: 
             self.resize(self.width()+1, self.height()+1)
@@ -418,10 +423,32 @@ class MeasurementWidget(QWidget, BaseView):
         #self.more_menu.addAction('With new cartridge', self.preferences)
         #self.more_button.setMenu(self.more_menu)
         self.quit_button.clicked.connect(self.quit)
-
+        
+        self.update_helptext_label()
         self.resized = False
         self.microscope_timer.start(50)
         self.waterfall_timer.start(50)
+
+    def update_helptext_label(self):
+        try:
+            files = [x for x in os.listdir(self.experiment.prepare_folder()) if x.endswith(".h5")]
+            newest = max(files , key = os.path.getctime)
+        except:
+            newest = "Test_Experiment_001.hf"
+        if self.experiment.active:
+            self.helptext_label.setText(
+                f"Measurement ongoing"
+                f"\n\nData being saved to {newest}"
+                f"\n\nLaser power:\t{self.experiment.electronics.scattering_laser}"
+                f"\nExposure time:\t{self.experiment.camera_microscope.config['exposure']}"
+                f"\nGain:\t{self.experiment.camera_microscope.config['gain']}")
+        else:
+            self.helptext_label.setText(
+                f"Measurement finished"
+                f"\n\nData was saved to {newest}"
+                f"\n\nLaser power:\t{self.experiment.electronics.scattering_laser}"
+                f"\nExposure time:\t{self.experiment.camera_microscope.config['exposure']}"
+                f"\nGain:\t{self.experiment.camera_microscope.config['gain']}")
 
     def update_microscope_viewer(self):
         img = self.experiment.get_latest_image()
@@ -437,6 +464,7 @@ class MeasurementWidget(QWidget, BaseView):
     def stop_measurement(self):
         if not self.experiment.saving: return
         self.experiment.active = False
+        self.update_helptext_label()
 
         self.stop_button.setFlat(True)
         self.stop_button.style().unpolish(self.stop_button)
@@ -459,6 +487,7 @@ class MeasurementWidget(QWidget, BaseView):
     def resume_measurement(self):
         if self.experiment.saving: return
         self.experiment.active = True
+        self.update_helptext_label()
         self.experiment.save_waterfall()
         self.stop_button.setFlat(False)
         self.stop_button.style().unpolish(self.stop_button)
@@ -488,6 +517,10 @@ class CloseWidget(QWidget, BaseView):
         super(CloseWidget, self).__init__(parent=parent)
         uic.loadUi(os.path.join(BASE_DIR_VIEW, 'Close_Widget.ui'), self)
         self.experiment = experiment
+
+        instructive_gif = QtGui.QMovie(os.path.join(BASE_DIR_VIEW, 'remove_cartridge.gif')) 
+        self.picture_label.setMovie(instructive_gif)
+        instructive_gif.start()
 
         self.close_button.clicked.connect(self.close)
         self.new_button.clicked.connect(self.preferences)

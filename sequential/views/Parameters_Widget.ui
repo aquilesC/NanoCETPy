@@ -42,9 +42,15 @@
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_2">
       <item>
-       <widget class="QLabel" name="label">
+       <widget class="QLabel" name="helptext_label">
         <property name="text">
-         <string>Enter Parameters</string>
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Enter the name of your experiment and the parameters for imaging.&lt;/p&gt;&lt;p&gt;	Laser power&lt;/p&gt;&lt;p&gt;	Exposure time&lt;/p&gt;&lt;p&gt;	Gain&lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;Open the lid and pipet 5μl of the sample on the squared spot on the cartridge.&lt;/p&gt;&lt;p&gt;Close the lid and start the measurement. &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+        </property>
+        <property name="wordWrap">
+         <bool>true</bool>
         </property>
        </widget>
       </item>
@@ -74,11 +80,14 @@
      </property>
      <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,0,1,0,3">
       <item>
-       <widget class="QLabel" name="label_5">
+       <widget class="QLabel" name="subtitle_fiber">
         <property name="font">
          <font>
           <pointsize>10</pointsize>
          </font>
+        </property>
+        <property name="frameShape">
+         <enum>QFrame::NoFrame</enum>
         </property>
         <property name="text">
          <string>Fiber</string>
@@ -103,11 +112,14 @@
        </widget>
       </item>
       <item>
-       <widget class="QLabel" name="label_7">
+       <widget class="QLabel" name="subtitle_exp">
         <property name="font">
          <font>
           <pointsize>10</pointsize>
          </font>
+        </property>
+        <property name="frameShape">
+         <enum>QFrame::NoFrame</enum>
         </property>
         <property name="text">
          <string>Experiment</string>
@@ -145,11 +157,14 @@
        </layout>
       </item>
       <item>
-       <widget class="QLabel" name="label_6">
+       <widget class="QLabel" name="subtitle_params">
         <property name="font">
          <font>
           <pointsize>10</pointsize>
          </font>
+        </property>
+        <property name="frameShape">
+         <enum>QFrame::NoFrame</enum>
         </property>
         <property name="text">
          <string>Parameters</string>

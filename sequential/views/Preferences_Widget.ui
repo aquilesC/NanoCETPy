@@ -54,7 +54,7 @@
        <enum>QLayout::SetDefaultConstraint</enum>
       </property>
       <item>
-       <widget class="QLabel" name="label_4">
+       <widget class="QLabel" name="helptext_label">
         <property name="maximumSize">
          <size>
           <width>16777215</width>
@@ -62,10 +62,13 @@
          </size>
         </property>
         <property name="text">
-         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Place cartridge &lt;/p&gt;&lt;p&gt;and enter preferences&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Open the lid of the NanoCET. &lt;/p&gt;&lt;p&gt;Open the clamp inside the container.&lt;/p&gt;&lt;p&gt;Place the cartridge inside the container. &lt;/p&gt;&lt;p&gt;Add immersion oil to the round spot on the cartridge until it covers the fiber. &lt;/p&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;p&gt;Enter your user name, which will be stored with the metadata of the measurement.&lt;/p&gt;&lt;p&gt;Select a location to store the measurement data.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
         </property>
         <property name="alignment">
-         <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+         <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+        </property>
+        <property name="wordWrap">
+         <bool>true</bool>
         </property>
        </widget>
       </item>
@@ -91,7 +94,7 @@
    <item>
     <layout class="QVBoxLayout" name="verticalLayout_2" stretch="5,1,1,1,1,1">
      <item>
-      <widget class="QLabel" name="label_3">
+      <widget class="QLabel" name="picture_label">
        <property name="font">
         <font>
          <pointsize>12</pointsize>
@@ -101,14 +104,17 @@
         <string notr="true"/>
        </property>
        <property name="text">
-        <string>Place cartridge picture</string>
+        <string/>
        </property>
       </widget>
      </item>
      <item>
       <layout class="QHBoxLayout" name="horizontalLayout_3">
        <item>
-        <widget class="QLabel" name="label_2">
+        <widget class="QLabel" name="subtitle_user">
+         <property name="frameShape">
+          <enum>QFrame::NoFrame</enum>
+         </property>
          <property name="text">
           <string>User name:</string>
          </property>
@@ -149,7 +155,10 @@
      <item>
       <layout class="QHBoxLayout" name="horizontalLayout_2">
        <item>
-        <widget class="QLabel" name="label">
+        <widget class="QLabel" name="subtitle_saving">
+         <property name="frameShape">
+          <enum>QFrame::NoFrame</enum>
+         </property>
          <property name="text">
           <string>Saving directory:</string>
          </property>

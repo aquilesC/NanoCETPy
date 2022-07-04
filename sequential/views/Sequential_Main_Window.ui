@@ -81,8 +81,15 @@ QMenu {
 }
 
 QLabel {
-	font-size: 5rem; /*16px;*/
+	font-size: 16px; /*5rem;*/
 	font-weight: 300;
+}
+
+QLabel[objectName^='subtitle'] {
+	font-size: 18px; /*5rem;*/
+	font-weight: 400;
+	border: 1px solid rgb(255,255,255);
+	border-bottom: 1px solid rgb(255, 117, 26);
 }
 
 QLabel#title {
@@ -90,6 +97,12 @@ QLabel#title {
 	font-weight: 300;
 	color: rgba(255, 117, 26, 100%);
 	padding-left: 1px;
+}
+
+QLabel#helptext_label {
+	font-size: 14px;
+	font-weight: 100;
+	padding-top: 16px;
 }
 
 QFrame#frame {
@@ -106,6 +119,8 @@ QLineEdit, QComboBox {
 	border-width: 1px;
 	border-style: solid;
 	border-color: rgba(0,0,0,50%);
+	padding-left: 5px;
+	font-size: 16px;
 }
 
 QComboBox::drop-down, QComboBox::drop-down:button {

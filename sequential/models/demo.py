@@ -56,6 +56,9 @@ class DemoExperiment(Experiment):
 
     def update_camera(self, *args):
         pass
+
+    def set_laser_power(self, *args):
+        pass
     
     @Action
     def save_waterfall(self):
@@ -74,7 +77,10 @@ class DemoCam:
         self.continuous_reads_running = True
         self.initialized = True
         self.camera = 'DemoCam'
+        self.ROI = ((0,1000),(0,1000))
+        self.config = {'exposure': 10, 'gain': 0}
 
 class DemoElectronics:
     def __init__(self):
         self.initialized = True
+        self.scattering_laser=50

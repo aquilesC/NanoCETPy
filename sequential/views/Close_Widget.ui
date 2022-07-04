@@ -19,7 +19,14 @@
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout" stretch="3,1">
+  <layout class="QVBoxLayout" name="verticalLayout" stretch="0,3,1">
+   <item>
+    <widget class="QLabel" name="picture_label">
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+   </item>
    <item>
     <widget class="QLabel" name="label">
      <property name="font">

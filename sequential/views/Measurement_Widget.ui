@@ -42,9 +42,15 @@
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_2">
       <item>
-       <widget class="QLabel" name="label">
+       <widget class="QLabel" name="helptext_label">
         <property name="text">
          <string>Measurement ongoing</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+        </property>
+        <property name="wordWrap">
+         <bool>true</bool>
         </property>
        </widget>
       </item>
@@ -138,11 +144,14 @@
      </property>
      <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,0,10">
       <item>
-       <widget class="QLabel" name="label_5">
+       <widget class="QLabel" name="subtitle_fiber">
         <property name="font">
          <font>
           <pointsize>10</pointsize>
          </font>
+        </property>
+        <property name="frameShape">
+         <enum>QFrame::NoFrame</enum>
         </property>
         <property name="text">
          <string>Fiber</string>
@@ -177,11 +186,14 @@
        </widget>
       </item>
       <item>
-       <widget class="QLabel" name="label_6">
+       <widget class="QLabel" name="subtitle_waterfall">
         <property name="font">
          <font>
           <pointsize>10</pointsize>
          </font>
+        </property>
+        <property name="frameShape">
+         <enum>QFrame::NoFrame</enum>
         </property>
         <property name="text">
          <string>Waterfall</string>
