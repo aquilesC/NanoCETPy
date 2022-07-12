@@ -133,7 +133,7 @@ class MainSetup(Experiment):
         self.electronics.fiber_led = 0
         self.electronics.top_led = 0
         self.electronics.side_led = 0
-        self.set_laser_power(1)
+        self.set_laser_power(3)
         # Find focus function
         self.find_focus()
         self.logger.info('TEST focus done')
@@ -167,7 +167,7 @@ class MainSetup(Experiment):
         self.update_camera(self.camera_fiber, self.config['defaults']['laser_focusing']['low'])
 
         # Turn on Laser
-        self.set_laser_power(1)
+        self.set_laser_power(3)
         time.sleep(.1)
         # Find alignment function
         self.align_laser_coarse(fiber_center)

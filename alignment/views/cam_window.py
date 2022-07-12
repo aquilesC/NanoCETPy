@@ -49,8 +49,8 @@ class AlignmentWindow(QMainWindow, BaseView):
         self.down_button.clicked.connect(lambda: self.move_piezo(1,0,self.experiment.config['electronics']['vertical_axis']))
         self.left_button.clicked.connect(lambda: self.move_piezo(1,1,self.experiment.config['electronics']['horizontal_axis']))
         self.right_button.clicked.connect(lambda: self.move_piezo(1,0,self.experiment.config['electronics']['horizontal_axis']))
-        self.plus_button.clicked.connect(lambda: self.move_piezo(32,1,3))
-        self.minus_button.clicked.connect(lambda: self.move_piezo(32,0,3))
+        self.plus_button.clicked.connect(lambda: self.move_piezo(5,1,3))
+        self.minus_button.clicked.connect(lambda: self.move_piezo(5,0,3))
 
         while self.experiment.camera_fiber.config['exposure'] is None:
             time.sleep(.1)
