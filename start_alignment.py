@@ -6,7 +6,7 @@ import yaml
 from PyQt5.QtWidgets import QApplication
 
 from alignment.models.experiment import AlignmentSetup
-from alignment.views.cam_window import AlignmentWindow
+from alignment.views.cam_window import AlignmentWindow, CartridgeWindow
 from experimentor.lib.log import log_to_screen, get_logger
 
 if __name__ == "__main__":
@@ -20,7 +20,10 @@ if __name__ == "__main__":
 
     os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
     app = QApplication([])
-    cam_window = AlignmentWindow(experiment)
+    if len(sys.argv) > 1 and sys.argv[1] == 'cartridge':
+        cam_window = CartridgeWindow(experiment)
+    else:
+        cam_window = AlignmentWindow(experiment)
     cam_window.show()
     app.exec()
     experiment.finalize()
