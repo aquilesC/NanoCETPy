@@ -20,7 +20,7 @@ from experimentor.models.experiments import Experiment
 #from dispertech.models.electronics.arduino import ArduinoModel
 from .arduino import ArduinoNanoCET
 from experimentor.models.decorators import make_async_thread
-from recording.models.movie_saver import WaterfallSaver
+from .movie_saver import WaterfallSaver
 from experimentor.core.signal import Signal
 
 
