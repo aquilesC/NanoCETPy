@@ -13,6 +13,7 @@ from experimentor.models.devices.cameras.basler.basler import BaslerCamera as Ca
 from experimentor.models.devices.cameras.exceptions import CameraTimeout
 from experimentor.models.experiments import Experiment
 from dispertech.models.electronics.arduino import ArduinoModel
+from .arduino import ArduinoExperimental
 from experimentor.models.decorators import make_async_thread
 
 
@@ -63,7 +64,7 @@ class AlignmentSetup(Experiment):
             switched on.
         """
 
-        self.electronics = ArduinoModel(**self.config['electronics']['arduino'])
+        self.electronics = ArduinoExperimental(**self.config['electronics']['arduino'])
         self.logger.info('Initializing electronics arduino')
         self.electronics.initialize()
 
@@ -101,7 +102,7 @@ class AlignmentSetup(Experiment):
         self.electronics.fiber_led = 0
         self.electronics.top_led = 0
         self.electronics.side_led = 0
-        self.set_laser_power(1)
+        self.set_laser_power(3)
         # Find focus function
         self.find_focus()
         self.logger.info('TEST focus done')
@@ -137,7 +138,7 @@ class AlignmentSetup(Experiment):
         self.update_camera(self.camera_fiber, self.config['laser_focusing']['low'])
         
         # Turn on Laser
-        self.set_laser_power(1)
+        self.set_laser_power(3)
         time.sleep(.1)
         # Find alignment function
         self.align_laser_coarse(fiber_center)
@@ -347,7 +348,7 @@ class AlignmentSetup(Experiment):
         if self.electronics.scattering_laser == 0:
             if self.display_camera == self.camera_fiber: 
                 self.update_camera(self.camera_fiber, self.config['laser_focusing']['low'])
-                self.electronics.scattering_laser = 1
+                self.electronics.scattering_laser = 3
                 self.electronics.fiber_led = 0
             if self.display_camera == self.camera_microscope: 
                 self.update_camera(self.camera_microscope, self.config['microscope_focusing']['high'])

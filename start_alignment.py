@@ -1,5 +1,6 @@
 import logging
 import time
+import os
 
 import yaml
 from PyQt5.QtWidgets import QApplication
@@ -17,7 +18,7 @@ if __name__ == "__main__":
     while executor.running():
         time.sleep(.1)
 
-
+    os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
     app = QApplication([])
     cam_window = AlignmentWindow(experiment)
     cam_window.show()

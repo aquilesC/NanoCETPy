@@ -9,6 +9,8 @@ from dispertech.controller.devices.arduino.arduino import Arduino
 
 from experimentor.lib.log import get_logger
 from experimentor.models.decorators import make_async_thread
+from experimentor.models import Feature
+
 
 
 rm = pyvisa.ResourceManager('@py')
@@ -69,3 +71,44 @@ class ArduinoNanoCET(ArduinoModel):
                 self.config.apply_all()
             self.initialized = True
             self.logger.info('TEST arduino init done') 
+
+    @Feature()
+    def scattering_laser(self):
+        """ Changes the laser power.
+
+        Parameters
+        ----------
+        power : int
+            Percentage of power (0-100)
+        """
+        return self._scattering_laser_power
+
+    @scattering_laser.setter
+    def scattering_laser(self, power):
+        with self.query_lock:
+            power = int(power * 4095 / 100)
+            self.driver.query(f'laser:{power}')
+            self.logger.info(f'laser:{power}')
+            self._scattering_laser_power = int(power)
+
+    @Feature()
+    def top_led(self):
+        return self._top_led
+
+    @top_led.setter
+    def top_led(self, status):
+        with self.query_lock:
+            self.driver.query(f'LED:TOP:{status}')
+            self._top_led = status
+            self.logger.info(f'LED:TOP:{status}')
+
+    @Feature()
+    def fiber_led(self):
+        return self._fiber_led
+
+    @fiber_led.setter
+    def fiber_led(self, status):
+        with self.query_lock:
+            self.driver.query(f'LED:FIBER:{status}')
+            self._fiber_led = status
+            self.logger.info(f'LED:FIBER:{status}')

@@ -8,7 +8,7 @@ user:
 
 electronics:
   arduino:
-    port: 'ASRL3::INSTR'
+    port: 'ASRL4::INSTR'
     baud_rate: 115200
   vertical_axis: 2
   horizontal_axis: 1
@@ -137,7 +137,7 @@ sample:
 
 laser_focusing:
   high:
-    exposure_time: 1000ms # originally 100ms
+    exposure_time: 400ms # originally 100ms
     gain: 10.
   low:
     exposure_time: 10us
@@ -148,5 +148,5 @@ microscope_focusing:
     exposure_time: 50ms
     gain: 10. # originally 40.
   low:
-    exposure_time: 50ms
+    exposure_time: 5ms
     gain: 0.

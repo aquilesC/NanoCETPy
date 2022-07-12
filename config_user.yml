@@ -42,7 +42,7 @@ defaults:
   fiber_center: null
   laser_focusing:
     high:
-      exposure: 100ms
+      exposure: 400ms
       gain: 10.0
     low:
       exposure: 10us
@@ -53,7 +53,7 @@ defaults:
       exposure: 50ms
       gain: 10.0
     low:
-      exposure: 50us
+      exposure: 5ms
       gain: 0.0
 electronics:
   arduino:
@@ -73,8 +73,8 @@ electronics:
   vertical_axis: 2
 info:
   files:
-    description: None
+    description: Test with water
     filename: Waterfall_{description}_{i}.h5
-    folder: C:\Users\Jakob\Code\NanoCETPy\recorded
+    folder: C:\disper\NanoCETPy\recorded
     max_memory: 2500
   user: Matthijs
