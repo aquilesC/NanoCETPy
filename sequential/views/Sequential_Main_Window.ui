@@ -23,8 +23,11 @@
 	background-color: rgb(255, 255, 255);
 }
 
+/*rgba(255, 117, 26)*/
+/*rgba(226, 83, 3)*/
+
 QWidget#centralwidget {
-	background-color: rgba(255, 117, 26, 1%);
+	background-color: rgba(226, 83, 3, 1%);
 	padding-top: 20px;
 	padding-right: 20px;
 	padding-left: 20px;
@@ -39,9 +42,9 @@ QWidget#main_widget {
 }
 
 QPushButton {
-	background-color: rgba(255, 117, 26, 100%);
+	background-color: rgba(226, 83, 3, 100%);
 	color: rgb(255,255,255);
-	border-color: rgba(255, 117, 26, 100%);
+	border-color: rgba(226, 83, 3, 100%);
 	border-width: 1px;
 	border-style: solid;
 	border-radius: 10px;
@@ -52,9 +55,9 @@ QPushButton {
 }
 
 QPushButton[flat='false'] {
-	background-color: rgba(255, 117, 26, 100%);
+	background-color: rgba(226, 83, 3, 100%);
 	color: rgb(255,255,255);
-	border-color: rgba(255, 117, 26, 100%);
+	border-color: rgba(226, 83, 3, 100%);
 	border-width: 1px;
 	border-style: solid;
 	border-radius: 10px;
@@ -65,9 +68,9 @@ QPushButton[flat='false'] {
 }
 
 QPushButton[flat='true'] {
-	background-color: rgba(255, 117, 26, 1%);
-	border-color: rgba(255, 117, 26, 50%);
-	color: rgba(255, 117, 26, 50%);
+	background-color: rgba(226, 83, 3, 1%);
+	border-color: rgba(226, 83, 3, 50%);
+	color: rgba(226, 83, 3, 50%);
 }
 
 QMenu {
@@ -89,13 +92,13 @@ QLabel[objectName^='subtitle'] {
 	font-size: 18px; /*5rem;*/
 	font-weight: 400;
 	border: 1px solid rgb(255,255,255);
-	border-bottom: 1px solid rgb(255, 117, 26);
+	border-bottom: 1px solid rgb(226, 83, 3);
 }
 
 QLabel#title {
 	font-size: 24px;
 	font-weight: 300;
-	color: rgba(255, 117, 26, 100%);
+	color: rgba(226, 83, 3, 100%);
 	padding-left: 1px;
 }
 
@@ -106,7 +109,7 @@ QLabel#helptext_label {
 }
 
 QFrame#frame {
-	border-color: rgba(255, 117, 26, 100%);
+	border-color: rgba(226, 83, 3, 100%);
 	border-style: solid;
     border-radius: 10px;
 	border-width: 2px;
@@ -266,7 +269,7 @@ QFrame {
      <x>0</x>
      <y>0</y>
      <width>1244</width>
-     <height>26</height>
+     <height>31</height>
     </rect>
    </property>
   </widget>
