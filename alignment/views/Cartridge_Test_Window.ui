@@ -108,9 +108,9 @@
     <property name="geometry">
      <rect>
       <x>490</x>
-      <y>660</y>
+      <y>647</y>
       <width>101</width>
-      <height>28</height>
+      <height>41</height>
      </rect>
     </property>
     <property name="text">
@@ -155,7 +155,7 @@
       <x>490</x>
       <y>700</y>
       <width>101</width>
-      <height>28</height>
+      <height>41</height>
      </rect>
     </property>
     <property name="text">
@@ -188,17 +188,17 @@
      <string>Save line</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="ROI_button">
+   <widget class="QPushButton" name="ROI_fiber_button">
     <property name="geometry">
      <rect>
-      <x>630</x>
+      <x>642</x>
       <y>630</y>
-      <width>93</width>
+      <width>81</width>
       <height>28</height>
      </rect>
     </property>
     <property name="text">
-     <string>ROI</string>
+     <string>ROI fiber</string>
     </property>
    </widget>
    <widget class="QLineEdit" name="save_edit">
@@ -314,6 +314,19 @@
     </property>
     <property name="text">
      <string>Fine</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="ROI_mic_button">
+    <property name="geometry">
+     <rect>
+      <x>642</x>
+      <y>660</y>
+      <width>81</width>
+      <height>28</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>ROI mic</string>
     </property>
    </widget>
   </widget>

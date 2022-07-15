@@ -128,7 +128,8 @@ class CartridgeWindow(QMainWindow, BaseView):
         self.stop_button.clicked.connect(self.experiment.toggle_active)
         self.connect_to_action(self.fiber_live_button.clicked, lambda: self.experiment.toggle_live(self.experiment.camera_fiber))
         self.connect_to_action(self.mic_live_button.clicked, lambda: self.experiment.toggle_live(self.experiment.camera_microscope))
-        self.ROI_button.clicked.connect(self.setROI)
+        self.ROI_fiber_button.clicked.connect(self.setROI_fiber)
+        self.ROI_mic_button.clicked.connect(self.setROI_mic)
         self.camera_viewer.roi_box = None
         self.linesave_button.clicked.connect(lambda: self.experiment.save_image(self.save_edit.text()))
 
@@ -209,7 +210,7 @@ class CartridgeWindow(QMainWindow, BaseView):
     def move_piezo(self, speed, direction, axis):
         self.experiment.electronics.move_piezo(speed, direction, axis)
 
-    def setROI(self):
+    def setROI_fiber(self):
         if self.camera_viewer.roi_box:
             logger.info('ROI if')
             pos = self.camera_viewer.roi_box.pos()
@@ -220,6 +221,19 @@ class CartridgeWindow(QMainWindow, BaseView):
         else:
             logger.info('ROI else')
             self.camera_viewer.roi_box = pg.ROI((0,0), size=(400,400), pen={'color': "FF0", 'width': 4}, rotatable=False, resizable=True)
+            self.camera_viewer.view.addItem(self.camera_viewer.roi_box)
+    
+    def setROI_mic(self):
+        if self.camera_viewer.roi_box:
+            logger.info('ROI if')
+            pos = self.camera_viewer.roi_box.pos()
+            size = self.camera_viewer.roi_box.size()
+            self.camera_viewer.view.removeItem(self.camera_viewer.roi_box)
+            self.camera_viewer.roi_box = None
+            self.experiment.set_mic_ROI(((pos[0],size[0]),(pos[1], size[1])))
+        else:
+            logger.info('ROI else')
+            self.camera_viewer.roi_box = pg.ROI((0,0), size=(1500,100), pen={'color': "FF0", 'width': 4}, rotatable=False, resizable=True)
             self.camera_viewer.view.addItem(self.camera_viewer.roi_box)
 
     def closeEvent(self, a0: QtGui.QCloseEvent) -> None:

@@ -321,7 +321,18 @@ class AlignmentSetup(Experiment):
         while self.camera_fiber.continuous_reads_running: time.sleep(.1)
         self.camera_fiber.ROI = ROI
         self.toggle_live(self.camera_fiber)
-        self.logger.info('ROI set up')
+        self.logger.info('ROI set up on fiber cam')
+    
+    def set_mic_ROI(self, ROI):
+        #width = 220
+        #cx, cy = 220,480
+        #new_roi = ((cy-width, 2*width), (cx-width, 2*width))
+        self.toggle_live(self.camera_microscope)
+        while self.camera_microscope.continuous_reads_running: time.sleep(.1)
+        current_ROI = self.camera_microscope.ROI
+        self.camera_microscope.ROI = (current_ROI[0], ROI[1])
+        self.toggle_live(self.camera_microscope)
+        self.logger.info('ROI set up on microscope cam')
 
     def update_camera(self, camera, new_config):
         """ Updates the properties of the camera.
