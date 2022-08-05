@@ -1,6 +1,7 @@
 import logging
 import time
 import os
+import sys
 
 import yaml
 from PyQt5.QtWidgets import QApplication

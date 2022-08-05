@@ -114,7 +114,7 @@ class CartridgeWindow(QMainWindow, BaseView):
     CAUTION: always stop live acquisition before triggering alignment!
     """
     def __init__(self, experiment):
-        super(AlignmentWindow, self).__init__()
+        super(CartridgeWindow, self).__init__()
         uic.loadUi(os.path.join(BASE_DIR_VIEW, 'Cartridge_Test_Window.ui'), self)
 
         self.experiment = experiment
@@ -174,24 +174,24 @@ class CartridgeWindow(QMainWindow, BaseView):
         if self.experiment.display_camera == self.experiment.camera_fiber:
             if mode == 0:
                 self.experiment.set_laser_power(0)
-                self.experiment.top_led = 0
-                self.experiment.fiber_led = 1
+                self.experiment.electronics.top_led = 0
+                self.experiment.electronics.fiber_led = 1
                 self.experiment.update_camera(self.experiment.camera_fiber, self.experiment.config['laser_focusing']['high'])
             elif mode == 1:
                 self.experiment.set_laser_power(3)
-                self.experiment.top_led = 0
-                self.experiment.fiber_led = 0
+                self.experiment.electronics.top_led = 0
+                self.experiment.electronics.fiber_led = 0
                 self.experiment.update_camera(self.experiment.camera_fiber, self.experiment.config['laser_focusing']['low'])
         elif self.experiment.display_camera == self.experiment.camera_microscope:
             if mode == 0:
                 self.experiment.set_laser_power(0)
-                self.experiment.top_led = 1
-                self.experiment.fiber_led = 0
-                self.experiment.update_camera(self.experiment.camera_microscpoe, self.experiment.config['microscope_focusing']['low'])
+                self.experiment.electronics.top_led = 1
+                self.experiment.electronics.fiber_led = 0
+                self.experiment.update_camera(self.experiment.camera_microscope, self.experiment.config['microscope_focusing']['low'])
             elif mode == 1:
                 self.experiment.set_laser_power(99)
-                self.experiment.top_led = 0
-                self.experiment.fiber_led = 0
+                self.experiment.electronics.top_led = 0
+                self.experiment.electronics.fiber_led = 0
                 self.experiment.update_camera(self.experiment.camera_microscope, self.experiment.config['microscope_focusing']['high'])
     
     def update_camera(self):
