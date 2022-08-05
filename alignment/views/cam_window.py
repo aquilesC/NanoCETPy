@@ -260,7 +260,8 @@ class CamWindow(QMainWindow, BaseView):
         self.apply_button.clicked.connect(self.update_camera)
         
         while self.experiment.camera.config['exposure'] is None:
-            time.sleep(.1)
+            time.sleep(1)
+            logger.info('wait')
         self.camera_gain_line.setText(str(self.experiment.camera.gain))
         self.camera_exposure_line.setText("{:~}".format(Q_(self.experiment.camera.exposure)))
         

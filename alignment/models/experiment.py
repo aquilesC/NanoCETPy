@@ -9,7 +9,8 @@ from . import model_utils as ut
 
 from experimentor.models.action import Action
 from experimentor import Q_
-from experimentor.models.devices.cameras.basler.basler import BaslerCamera as Camera
+#from experimentor.models.devices.cameras.basler.basler import BaslerCamera as Camera
+from .lumenera_model_draft import LumeneraCamera
 from experimentor.models.devices.cameras.exceptions import CameraTimeout
 from experimentor.models.experiments import Experiment
 from dispertech.models.electronics.arduino import ArduinoModel
@@ -431,7 +432,7 @@ class CamSetup(Experiment):
     def __init__(self, filename=None):
         super(CamSetup, self).__init__(filename=filename)
         
-        self.camera_fiber = None
+        self.camera = None
         self.finalized = False
         self.display_camera = False
 
@@ -448,53 +449,53 @@ class CamSetup(Experiment):
 
     def initialize_cameras(self):
         self.logger.info('Initializing cameras')
-        config_fiber = self.config['camera']
-        self.camera_fiber = Camera(config_fiber['init'], initial_config=config_fiber['config'])
-        self.logger.info(f'Initializing {self.camera_fiber}')
-        self.camera_fiber.initialize()
-        self.logger.debug(f'Configuring {self.camera_fiber}')
+        config_fiber = self.config['camera_lumenera']
+        self.camera = LumeneraCamera(config_fiber['init'], initial_config=config_fiber['config'])
+        self.logger.info('test after init')
+        self.logger.info(f'Initializing {self.camera}')
+        self.camera.initialize()
+        self.logger.debug(f'Configuring {self.camera}')
         
     @Action
     def snap_image(self):
         self.logger.info('Trying to snap image')
-        if self.camera_fiber.continuous_reads_running: 
+        if self.camera.continuous_reads_running: 
             self.logger.warning('Continuous reads still running')
             return
         if self.display_camera: 
             self.display_camera = False
             return
-        self.camera_fiber.acquisition_mode = self.camera_fiber.MODE_SINGLE_SHOT
-        self.camera_fiber.trigger_camera()
-        self.camera_fiber.read_camera()
+        self.camera.acquisition_mode = self.camera.MODE_SINGLE_SHOT
+        self.camera.trigger_camera()
+        self.camera.read_camera()
+        self.logger.info('snap test')
         self.display_camera = True
         self.logger.info('Snap Image complete')
         
     @Action
     def toggle_live(self):
         self.logger.info('Toggle live')
-        if self.camera_fiber.continuous_reads_running:
-            self.camera_fiber.stop_continuous_reads()
-            self.camera_fiber.stop_free_run()
+        if self.camera.continuous_reads_running:
+            self.camera.stop_continuous_reads()
+            self.camera.stop_free_run()
             self.logger.info('Continuous reads ended')
             self.display_camera = False
         else:
-            self.camera_fiber.start_free_run()
-            self.camera_fiber.continuous_reads()
+            self.camera.start_free_run()
+            self.camera.continuous_reads()
             self.display_camera = True
             self.logger.info('Continuous reads started')
 
     def get_latest_image(self):
-        if self.display_camera: return self.camera_fiber.temp_image
+        if self.display_camera: return self.camera.temp_image
         else: return self.demo_image
     
     def finalize(self):
         if self.finalized:
            return
         self.logger.info('Finalizing calibration experiment')
-        if self.camera_fiber is not None:
-            self.camera_fiber.finalize()
-            self.camera_microscope.finalize()
-        self.electronics.finalize()    
+        if self.camera is not None:
+            self.camera.finalize()   
         
 
         super(CamSetup, self).finalize()
