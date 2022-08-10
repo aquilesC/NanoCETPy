@@ -88,17 +88,17 @@ camera_microscope:
 
 camera_lumenera:
   model: lumenera # Should be a python file in model/cameras
-  init: 22050065 # Initial arguments to pass when creating the camera, for lumenera maybe 
+  init: 22050065 # Initial arguments to pass when creating the camera, for lumenera using serial number seems straightforward 
   #extra_args: [extra, arguments] # Extra arguments that can be passed when constructing the model
   model_camera: None # To keep a registry of which camera was used in the experiment
   config:
-    exposure: 100ms # Initial exposure time (in ms)
-    gain: 14.
-    auto_exposure: Off
-    auto_gain: Off
+    exposure: 500us # Initial exposure time (in ms)
+    gain: 1.
+    #auto_exposure: Off  # Not sure how to set this in Lucam API
+    #auto_gain: Off
     pixel_format: 1 # PIXEL_FORMAT_16
     binning: [1, 1] # Binning
-    ROI: [[1, 1280], [1, 960]]
+    ROI: [[1, 2064], [1, 1544]]
     #buffer_size: 200MB  # Buffer size to allocate memory in the ring-buffer of Basler
 
 camera:

@@ -10,7 +10,7 @@ from experimentor.lib.log import log_to_screen, get_logger
 
 if __name__ == "__main__":
     logger = get_logger()
-    handler = log_to_screen(logger=logger)
+    handler = log_to_screen(logger=logger)#, level=logging.DEBUG)
     experiment = CamSetup()
     experiment.load_configuration('cam_feed.yml', yaml.UnsafeLoader)
     executor = experiment.initialize()

@@ -4,6 +4,7 @@ import numpy as np
 import time
 from threading import Event
 import sys
+import inspect
 
 from ..controller.lucamapi.api import *
 from ..controller.lucamapi.camera import *     
@@ -12,7 +13,7 @@ from experimentor import Q_
 from experimentor.core.signal import Signal
 from experimentor.lib.log import get_logger
 from experimentor.models.action import Action
-from experimentor.models.decorators import make_async_thread
+from experimentor.models.decorators import make_async_thread, not_implemented
 from experimentor.models.devices.cameras.exceptions import WrongCameraState, CameraException
 from experimentor.models.devices.cameras.base_camera import BaseCamera
 from experimentor.models.devices.cameras.exceptions import CameraNotFound
@@ -48,7 +49,6 @@ class LumeneraCamera(BaseCamera):
         
         for i, camera in enumerate(cameras):
             if self.camera == camera.SerialNumber():
-                self.logger.info('lumenera init test')
                 handle = api.CameraOpen(i+1)
                 self._camera = Camera(api, handle)
         
@@ -61,12 +61,18 @@ class LumeneraCamera(BaseCamera):
 
         self.snapshot_settings = self._camera.CreateSnapshotSettings()
         self.config.fetch_all()
+        self.logger.info('lumenera init test')
         if self.initial_config is not None:
+            self.logger.info('lumenera init test')
             self.config.update(self.initial_config)
+            self.logger.info('lumenera init test')
             self.config.apply_all()
+            self.logger.info('lumenera init test')
+        self.logger.info('lumenera init exit')
     
     @Feature()
     def acquisition_mode(self):
+        self.logger.debug(f'calling {inspect.stack()[0][3]}')
         return self._acquisition_mode
 
     @acquisition_mode.setter
@@ -78,7 +84,6 @@ class LumeneraCamera(BaseCamera):
             self._acquisition_mode = mode
 
         elif mode == self.MODE_SINGLE_SHOT:
-            self.logger.info(f'snap test {self.snapshot_settings}')
             try:
                 self._camera.EnableFastFrames(self.snapshot_settings)
             except ApiError: 
@@ -88,10 +93,11 @@ class LumeneraCamera(BaseCamera):
     @Feature()
     def exposure(self) -> Q_:
         """ The exposure of the camera, defined in units of time """
+        self.logger.debug(f'calling {inspect.stack()[0][3]}')
         if self.config['exposure'] is not None:
             return self.config['exposure']
         try:
-            if self.acquisition_mode == self.MODE_SINGLE_SHOT: return self.snapshot_settings.exposure
+            if self.acquisition_mode == self.MODE_SINGLE_SHOT: return float(self.snapshot_settings.exposure * 1000) * Q_('us')
             exposure = float(self._camera.GetPropertyValue(PROPERTY_EXPOSURE) * 1000) * Q_('us')
             return exposure
         except:
@@ -117,6 +123,7 @@ class LumeneraCamera(BaseCamera):
     @Feature()
     def gain(self):
         """ Gain is a float """
+        self.logger.debug(f'calling {inspect.stack()[0][3]}')
         if self.acquisition_mode == self.MODE_SINGLE_SHOT:
             return self.snapshot_settings.gain
         try:
@@ -139,6 +146,7 @@ class LumeneraCamera(BaseCamera):
 
     @Feature()
     def pixel_format(self):
+        self.logger.debug(f'calling {inspect.stack()[0][3]}')
         """ Pixel format must be one of PIXEL_FORMAT_8 or PIXEL_FORMAT_16"""
         if self.acquisition_mode == self.MODE_SINGLE_SHOT:
             pixel_format = self.snapshot_settings.format.pixelFormat
@@ -150,7 +158,7 @@ class LumeneraCamera(BaseCamera):
         elif pixel_format == PIXEL_FORMAT_16:
             self.current_dtype = np.uint16
         else:
-            self.logger.warning(f'Current pixel format is {pixel_format} while only Mono8, Mono12 and Mono12p are supported')
+            self.logger.warning(f'Current pixel format is {pixel_format} while only PIXEL_FORMAT_8 and PIXEL_FORMAT_16 are supported')
         return pixel_format
 
     @pixel_format.setter
@@ -170,17 +178,21 @@ class LumeneraCamera(BaseCamera):
             self.current_dtype = np.uint16
         else:
             self.logger.warning(f'Trying to set pixel_format to {mode}, which is not valid')
+        self.logger.info(f'\tCurrent dtype is {self.current_dtype}')
 
     @Feature()
     def ccd_height(self):
+        self.logger.debug(f'calling {inspect.stack()[0][3]}')
         return self._camera.GetPropertyValue(PROPERTY_MAX_HEIGHT)
 
     @Feature()
     def ccd_width(self):
+        self.logger.debug(f'calling {inspect.stack()[0][3]}')
         return self._camera.GetPropertyValue(PROPERTY_MAX_WIDTH)
 
     @Feature()
     def width(self):
+        self.logger.debug(f'calling {inspect.stack()[0][3]}')
         if self.acquisition_mode == self.MODE_SINGLE_SHOT: 
             return self.snapshot_settings.format.width
         elif self.acquisition_mode == self.MODE_CONTINUOUS:
@@ -188,12 +200,62 @@ class LumeneraCamera(BaseCamera):
 
     @Feature()
     def height(self):
+        self.logger.debug(f'calling {inspect.stack()[0][3]}')
         if self.acquisition_mode == self.MODE_SINGLE_SHOT: 
             return self.snapshot_settings.format.height
         elif self.acquisition_mode == self.MODE_CONTINUOUS:
             return self._camera.GetFrameFormat().height
 
-    
+    @Feature()
+    def ROI(self):
+        self.logger.debug(f'calling {inspect.stack()[0][3]}')
+        try:
+            ff = self._camera.GetFormat()[0]
+        except ApiError:
+            self.logger.error(f'API error in {inspect.stack()[0][3]}')
+        return ((ff.xOffset, ff.xOffset+ff.width),(ff.yOffset, ff.yOffset+ff.height))
+        
+    @ROI.setter
+    def ROI(self, vals):
+        x_offset, width = vals[0]
+        y_offset, height = vals[1]
+        x_unit = int(self._camera.GetPropertyValue(PROPERTY_UNIT_WIDTH))
+        y_unit = int(self._camera.GetPropertyValue(PROPERTY_UNIT_HEIGHT))
+        x_offset -= x_offset % x_unit
+        width -= width % x_unit
+        y_offset -= y_offset % y_unit
+        height -= height % y_unit
+        self.logger.info(f'Updating ROI: (x, y, width, height) = ({x_offset}, {y_offset}, {width}, {height})')
+
+        ff, fr = self._camera.GetFormat()
+        ff.xOffset = int(x_offset)
+        ff.width = int(width)
+        ff.yOffset = int(y_offset)
+        ff.height = int(height)
+        self._camera.SetFormat(ff,fr)
+        if self.acquisition_mode == self.MODE_SINGLE_SHOT:
+            self._camera.DisableFastFrames()
+        self.snapshot_settings.format.xOffset = int(x_offset)
+        self.snapshot_settings.format.width = int(width)
+        self.snapshot_settings.format.yOffset = int(y_offset)
+        self.snapshot_settings.format.height = int(height)
+        if self.acquisition_mode == self.MODE_SINGLE_SHOT: 
+            self._camera.EnableFastFrames(self.snapshot_settings)          
+
+    @Feature()
+    def frame_rate(self):
+        self.logger.debug(f'calling {inspect.stack()[0][3]}')
+        return float(self._camera.GetFrameRate()) 
+
+    #@Feature()
+    #@not_implemented
+    #def auto_exposure(self):
+    #    pass   
+
+    #@Feature()
+    #@not_implemented
+    #def auto_gain(self):
+    #    pass
 
     #
     # ALL OTHER FEATURES
@@ -220,13 +282,11 @@ class LumeneraCamera(BaseCamera):
                     buffer = self._camera.TakeFastFrame()
                 except ApiError:
                     self.logger.error('ApiError in read_camera')
-                self.logger.info('tesetttttttttttttttttttttttttttt')
                 img.append(np.frombuffer(buffer, dtype=self.current_dtype).reshape((self.width,self.height), order='F'))
-                self.logger.info('tesetttttttttttttttttttttttttttt')
                 self.temp_image = img[0]
-                self.logger.info('tesetttttttttttttttttttttttttttt')
             elif mode == self.MODE_CONTINUOUS:
                 buffer = self._camera.CaptureRawVideoImage()[0]
+                # How to read all of available buffer? 
                 assert buffer is not None
                 img.append(np.frombuffer(buffer, dtype=self.current_dtype).reshape((self.width,self.height), order='F'))
                 self.temp_image = img[0]

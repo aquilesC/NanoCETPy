@@ -254,11 +254,15 @@ class CamWindow(QMainWindow, BaseView):
         self.camera_viewer = CameraViewerWidget(parent=self)
         self.camera_widget.layout().addWidget(self.camera_viewer)
         #self.camera_viewer.clicked_on_image.connect(self.mouse_clicked)
+        self.camera_viewer.roi_box = None
+
 
         self.connect_to_action(self.snap_button.clicked, self.experiment.snap_image)
         self.connect_to_action(self.live_button.clicked, self.experiment.toggle_live)
+        self.ROI_button.clicked.connect(self.set_ROI)
         self.apply_button.clicked.connect(self.update_camera)
         
+        time.sleep(1)
         while self.experiment.camera.config['exposure'] is None:
             time.sleep(1)
             logger.info('wait')
@@ -288,6 +292,19 @@ class CamWindow(QMainWindow, BaseView):
             'gain': float(self.camera_gain_line.text()),
         })
         self.experiment.camera.config.apply_all()
+    
+    def set_ROI(self):
+        if self.camera_viewer.roi_box:
+            logger.info('ROI if')
+            pos = self.camera_viewer.roi_box.pos()
+            size = self.camera_viewer.roi_box.size()
+            self.camera_viewer.view.removeItem(self.camera_viewer.roi_box)
+            self.camera_viewer.roi_box = None
+            self.experiment.set_ROI(((pos[0],size[0]),(pos[1], size[1])))
+        else:
+            logger.info('ROI else')
+            self.camera_viewer.roi_box = pg.ROI((0,0), size=(400,400), pen={'color': "FF0", 'width': 4}, rotatable=False, resizable=True)
+            self.camera_viewer.view.addItem(self.camera_viewer.roi_box)
 
     def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
         logger.info('Cam Window Closed')

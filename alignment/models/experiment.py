@@ -442,7 +442,7 @@ class CamSetup(Experiment):
     @Action
     def initialize(self):
         self.initialize_cameras()
-        self.logger.info('Starting free runs and continuous reads')
+        #self.logger.info('Starting free runs and continuous reads')
         #time.sleep(1)
         #self.camera.start_free_run()
         #self.camera.continuous_reads()
@@ -468,7 +468,6 @@ class CamSetup(Experiment):
         self.camera.acquisition_mode = self.camera.MODE_SINGLE_SHOT
         self.camera.trigger_camera()
         self.camera.read_camera()
-        self.logger.info('snap test')
         self.display_camera = True
         self.logger.info('Snap Image complete')
         
@@ -489,6 +488,14 @@ class CamSetup(Experiment):
     def get_latest_image(self):
         if self.display_camera: return self.camera.temp_image
         else: return self.demo_image
+    
+    def set_ROI(self, ROI):
+        self.logger.info('setting up ROI on cam')
+        self.toggle_live()
+        while self.camera.continuous_reads_running: time.sleep(1)
+        self.camera.ROI = ROI
+        self.toggle_live()
+        self.logger.info('ROI set up on cam')
     
     def finalize(self):
         if self.finalized:
