@@ -1,3 +1,6 @@
+"""
+    Experiment module for the entire usage sequence of the NanoCET 
+"""
 import os
 from ssl import ALERT_DESCRIPTION_ACCESS_DENIED
 import time
@@ -26,7 +29,18 @@ from experimentor.core.signal import Signal
 
 
 class MainSetup(Experiment):
-    """ Setup for recording Fiber core
+    """ This is a Experiment subclass to control the NanoCET in a sequential experiment consisting of focusing, alignment, and recording a waterfall
+
+    :param str filename: yml file containing the configuration settings for the experiment
+
+    >>> # First the experiment is instantiated with the corresponding filename
+    >>> experiment = MainSetup('config.yml')
+    >>> # Or 
+    >>> experiment = MainSetup()
+    >>> experiment.load_configuration('config.yml', yaml.UnsafeLoader)
+
+    >>> # Then the experiment is initialized to load the connected device classes
+    >>> experiment.initialize()
     """
     def __init__(self, filename=None):
         super(MainSetup, self).__init__(filename=filename)
@@ -49,6 +63,11 @@ class MainSetup(Experiment):
 
     @Action
     def initialize(self):
+        """ Initializes the cameras and Arduino objects. 
+        Runs in a loop until every device is connected and initialized.
+
+        :return: None
+        """
         #self.initialize_cameras()
         #self.initialize_electronics()
 
@@ -102,12 +121,8 @@ class MainSetup(Experiment):
     def start_alignment(self):
         """ Wraps the whole alignment procedure from focussing to aligning.
         Run in an async thread as it calls other Actions
-        TODO: change to single shot acquisition
-
-        Args:
-            None
-        Returns:
-            None
+        
+        :return: None
         """
         self.logger.info('TEST Starting Laser Alignment')
         self.active = True
@@ -186,10 +201,7 @@ class MainSetup(Experiment):
         Idea: Laser beam and thus reflection have gaussian intensity profile. The lower the spread the less pixel values are above a certain arbitrary percentile
         Procedure: Check number of pixels above percentile and compare to previous measurement. If increasing, change direction and reduce speed. Stop at a certain minimum speed.
         
-        Args: 
-            None
-        Returns: 
-            None
+        :return: None
         """
         self.logger.info('TEST start finding focus')
         direction = 0
@@ -212,12 +224,12 @@ class MainSetup(Experiment):
 
     def align_laser_coarse(self, fiber_center):
         """ Aligns the focussed laser beam to the previously detected center of the fiber.
-        TODO: find suitable way to detect laser beam center
-
-        Args:
-            fiber_center: array or tuple of shape (2,)
-        Returns:
-            None
+        
+        :param fiber_center: coordinates of the center of the fiber 
+        :type fiber_center: array or tuple of shape (2,)
+        :returns: None
+        
+        .. todo:: find suitable way to detect laser beam center
         """
         assert len(fiber_center) == 2
         axis = self.config['electronics']['horizontal_axis']
@@ -258,12 +270,10 @@ class MainSetup(Experiment):
         """ Maximises the fiber core scattering signal seen on the microscope cam by computing the median along axis 0.
         Idea: Median along axis 0 is highest for the position of fiber center even with bright dots from impurities in the image
         Procedure: Move until np.max(median)/np.min(median) gets smaller then change direction
-        TODO: Consider just using mean of image
-
-        Args:
-            None
-        Returns:
-            None
+        
+        :return: None
+            
+        .. todo:: Consider just using mean of image
         """
         axis = self.config['electronics']['horizontal_axis']
         for i in range(2):
@@ -413,8 +423,8 @@ class MainSetup(Experiment):
 
     def update_camera(self, camera, new_config):
         """ Updates the properties of the camera.
-        new_config should be dict with keys exposure_time and gain"""
-
+        new_config should be dict with keys exposure_time and gain
+        """
         self.logger.info('Updating parameters of the camera')
         camera.config.update({
                 'exposure': Q_(new_config['exposure']),

@@ -21,3 +21,4 @@ _build/
 .ipynb_checkpoints/
 multiply_array.npy
 test*
+lt29059-sample.py
