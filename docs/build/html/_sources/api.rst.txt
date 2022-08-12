@@ -1,0 +1,7 @@
+List
+====
+
+.. autosummary::
+    :toctree: generated
+
+    sequential

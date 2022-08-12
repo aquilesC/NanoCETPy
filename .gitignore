@@ -8,12 +8,11 @@ __pycache__/
 myenv
 *.exe
 *.pyc
-*.BAT
+STARTUP.BAT
 *.sh
 *.tiff
 recorded/
 .idea
-build/
 dist/
 venv/
 *.egg-info/

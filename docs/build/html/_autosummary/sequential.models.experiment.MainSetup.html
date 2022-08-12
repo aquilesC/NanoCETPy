@@ -1,0 +1,255 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>sequential.models.experiment.MainSetup &#8212; NanoCETPy 0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/classic.css" />
+    
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="sequential.models.model_utils" href="sequential.models.model_utils.html" />
+    <link rel="prev" title="sequential.models.experiment" href="sequential.models.experiment.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="sequential.models.model_utils.html" title="sequential.models.model_utils"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="sequential.models.experiment.html" title="sequential.models.experiment"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">NanoCETPy 0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../sequential.html" >Sequential Module</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="sequential.models.html" >sequential.models</a> &#187;</li>
+          <li class="nav-item nav-item-3"><a href="sequential.models.experiment.html" accesskey="U">sequential.models.experiment</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">sequential.models.experiment.MainSetup</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="sequential-models-experiment-mainsetup">
+<h1>sequential.models.experiment.MainSetup<a class="headerlink" href="#sequential-models-experiment-mainsetup" title="Permalink to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="sequential.models.experiment.MainSetup">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sequential.models.experiment.</span></span><span class="sig-name descname"><span class="pre">MainSetup</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#sequential.models.experiment.MainSetup" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a Experiment subclass to control the NanoCET in a sequential experiment consisting of focusing, alignment, and recording a waterfall</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>filename</strong> (<em>str</em>) – yml file containing the configuration settings for the experiment</p>
+</dd>
+</dl>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># First the experiment is instantiated with the corresponding filename</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">experiment</span> <span class="o">=</span> <span class="n">MainSetup</span><span class="p">(</span><span class="s1">&#39;config.yml&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Or </span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">experiment</span> <span class="o">=</span> <span class="n">MainSetup</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">experiment</span><span class="o">.</span><span class="n">load_configuration</span><span class="p">(</span><span class="s1">&#39;config.yml&#39;</span><span class="p">,</span> <span class="n">yaml</span><span class="o">.</span><span class="n">UnsafeLoader</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="c1"># Then the experiment is initialized to load the connected device classes</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">experiment</span><span class="o">.</span><span class="n">initialize</span><span class="p">()</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="sequential.models.experiment.MainSetup.align_laser_coarse">
+<span class="sig-name descname"><span class="pre">align_laser_coarse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fiber_center</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#sequential.models.experiment.MainSetup.align_laser_coarse" title="Permalink to this definition">¶</a></dt>
+<dd><p>Aligns the focussed laser beam to the previously detected center of the fiber.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>fiber_center</strong> (<em>array</em><em> or </em><em>tuple of shape</em><em> (</em><em>2</em><em>,</em><em>)</em>) – coordinates of the center of the fiber</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+<div class="admonition-todo admonition" id="id1">
+<p class="admonition-title">Todo</p>
+<p>find suitable way to detect laser beam center</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sequential.models.experiment.MainSetup.align_laser_fine">
+<span class="sig-name descname"><span class="pre">align_laser_fine</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#sequential.models.experiment.MainSetup.align_laser_fine" title="Permalink to this definition">¶</a></dt>
+<dd><p>Maximises the fiber core scattering signal seen on the microscope cam by computing the median along axis 0.
+Idea: Median along axis 0 is highest for the position of fiber center even with bright dots from impurities in the image
+Procedure: Move until np.max(median)/np.min(median) gets smaller then change direction</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+<div class="admonition-todo admonition" id="id2">
+<p class="admonition-title">Todo</p>
+<p>Consider just using mean of image</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sequential.models.experiment.MainSetup.finalize">
+<span class="sig-name descname"><span class="pre">finalize</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#sequential.models.experiment.MainSetup.finalize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Needs to be overridden by child classes.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sequential.models.experiment.MainSetup.find_ROI">
+<span class="sig-name descname"><span class="pre">find_ROI</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">crop</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#sequential.models.experiment.MainSetup.find_ROI" title="Permalink to this definition">¶</a></dt>
+<dd><p>Assuming alignment, this function fits a gaussian to the microscope images cross section to compute an ROI</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sequential.models.experiment.MainSetup.find_focus">
+<span class="sig-name descname"><span class="pre">find_focus</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#sequential.models.experiment.MainSetup.find_focus" title="Permalink to this definition">¶</a></dt>
+<dd><p>Finding the focus with turned on laser by minimizing area of laser reflection.
+Idea: Laser beam and thus reflection have gaussian intensity profile. The lower the spread the less pixel values are above a certain arbitrary percentile
+Procedure: Check number of pixels above percentile and compare to previous measurement. If increasing, change direction and reduce speed. Stop at a certain minimum speed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sequential.models.experiment.MainSetup.get_filename">
+<span class="sig-name descname"><span class="pre">get_filename</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base_filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#sequential.models.experiment.MainSetup.get_filename" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if the given filename exists in the given folder and increments a counter until the first non-used
+filename is available.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>base_filename</strong> – must have two placeholders {description} and {i}</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>full path to the file where to save the data</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sequential.models.experiment.MainSetup.prepare_folder">
+<span class="sig-name descname"><span class="pre">prepare_folder</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#sequential.models.experiment.MainSetup.prepare_folder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates the folder with the proper date, using the base directory given in the config file</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sequential.models.experiment.MainSetup.save_waterfall">
+<span class="sig-name descname"><span class="pre">save_waterfall</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#sequential.models.experiment.MainSetup.save_waterfall" title="Permalink to this definition">¶</a></dt>
+<dd><p>Assuming a set ROI, this function calculates a waterfall slice per image frame and sends it to a MovieSaver instance</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sequential.models.experiment.MainSetup.set_laser_power">
+<span class="sig-name descname"><span class="pre">set_laser_power</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">power</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#sequential.models.experiment.MainSetup.set_laser_power" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the laser power, taking into account closing the shutter if the power is 0</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sequential.models.experiment.MainSetup.start_alignment">
+<span class="sig-name descname"><span class="pre">start_alignment</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#sequential.models.experiment.MainSetup.start_alignment" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wraps the whole alignment procedure from focussing to aligning.
+Run in an async thread as it calls other Actions</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sequential.models.experiment.MainSetup.update_camera">
+<span class="sig-name descname"><span class="pre">update_camera</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">camera</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_config</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#sequential.models.experiment.MainSetup.update_camera" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates the properties of the camera.
+new_config should be dict with keys exposure_time and gain</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="sequential.models.experiment.html"
+                          title="previous chapter">sequential.models.experiment</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="sequential.models.model_utils.html"
+                          title="next chapter">sequential.models.model_utils</a></p>
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/_autosummary/sequential.models.experiment.MainSetup.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="sequential.models.model_utils.html" title="sequential.models.model_utils"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="sequential.models.experiment.html" title="sequential.models.experiment"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">NanoCETPy 0.1 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../sequential.html" >Sequential Module</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="sequential.models.html" >sequential.models</a> &#187;</li>
+          <li class="nav-item nav-item-3"><a href="sequential.models.experiment.html" >sequential.models.experiment</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">sequential.models.experiment.MainSetup</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2022, Jakob.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.1.1.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,33 @@
+sequential.models.model\_utils
+==============================
+
+.. automodule:: sequential.models.model_utils
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      centroid
+      circle2d_array
+      gaussian2d_array
+      image_convolution
+      to_uint8
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+

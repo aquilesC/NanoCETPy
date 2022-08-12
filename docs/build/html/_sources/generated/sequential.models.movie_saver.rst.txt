@@ -1,0 +1,30 @@
+sequential.models.movie\_saver
+==============================
+
+.. automodule:: sequential.models.movie_saver
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      MovieSaver
+      WaterfallSaver
+   
+   
+
+   
+   
+   
+
+
+

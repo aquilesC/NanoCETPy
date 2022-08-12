@@ -1,0 +1,29 @@
+sequential.models.basler
+========================
+
+.. automodule:: sequential.models.basler
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      BaslerNanoCET
+   
+   
+
+   
+   
+   
+
+
+

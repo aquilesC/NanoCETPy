@@ -1,0 +1,31 @@
+sequential.models.demo
+======================
+
+.. automodule:: sequential.models.demo
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      DemoCam
+      DemoElectronics
+      DemoExperiment
+   
+   
+
+   
+   
+   
+
+
+

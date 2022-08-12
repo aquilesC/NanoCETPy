@@ -1,0 +1,29 @@
+sequential.models.experiment
+============================
+
+.. automodule:: sequential.models.experiment
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      MainSetup
+   
+   
+
+   
+   
+   
+
+
+

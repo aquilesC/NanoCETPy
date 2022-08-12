@@ -1,0 +1,23 @@
+﻿sequential
+==========
+
+.. automodule:: sequential
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+   
+   
+   
+
+
+
