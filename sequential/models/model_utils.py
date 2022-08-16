@@ -1,3 +1,7 @@
+"""
+    Utility functions for some image processing used in alignment 
+"""
+
 import numpy as np
 from scipy import ndimage
 

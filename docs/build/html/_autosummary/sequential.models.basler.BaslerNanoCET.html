@@ -55,6 +55,9 @@
 <dt class="sig sig-object py" id="sequential.models.basler.BaslerNanoCET">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sequential.models.basler.</span></span><span class="sig-name descname"><span class="pre">BaslerNanoCET</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#sequential.models.basler.BaslerNanoCET" title="Permalink to this definition">¶</a></dt>
 <dd><p>BaslerCamera with modified initialize routine to enable NanoCET software connection check screen</p>
+<p>while the <code class="xref py py-meth docutils literal notranslate"><span class="pre">initialize()</span></code> of the <code class="xref py py-class docutils literal notranslate"><span class="pre">MainSetup()</span></code> runs in a loop 
+triggering the device initialization methods, this <a class="reference internal" href="#sequential.models.basler.BaslerNanoCET.initialize" title="sequential.models.basler.BaslerNanoCET.initialize"><code class="xref py py-meth docutils literal notranslate"><span class="pre">initialize()</span></code></a> only completes if a device is found,
+otherwise it raises an error.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="sequential.models.basler.BaslerNanoCET.clear_ROI">
 <span class="sig-name descname"><span class="pre">clear_ROI</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#sequential.models.basler.BaslerNanoCET.clear_ROI" title="Permalink to this definition">¶</a></dt>

@@ -1,3 +1,9 @@
+"""
+    Module containing the main GUI window and all the functional widgets to be displayed on it.
+
+    
+"""
+
 from cProfile import label
 from distutils.command.config import config
 import os
@@ -257,7 +263,7 @@ class PreferencesWidget(QWidget, BaseView):
 
 
 class FocusWidget(QWidget, BaseView):
-    '''Widget to do something'''
+    '''Widget to focus the microscope on fiber and start alignment'''
     parameters_signal = pyqtSignal()
     status_signal = pyqtSignal(str)
 
@@ -338,7 +344,7 @@ class FocusWidget(QWidget, BaseView):
 
 
 class ParametersWidget(QWidget, BaseView):
-    '''Widget to do something'''
+    '''Widget to enter parameters for experiment'''
     start_signal = pyqtSignal()
 
     def __init__(self, experiment, parent=None):
@@ -394,7 +400,7 @@ class ParametersWidget(QWidget, BaseView):
 
 
 class MeasurementWidget(QWidget, BaseView):
-    '''Widget to do something'''
+    '''Widget to observe fiber and waterfall while measuring'''
     quit_signal = pyqtSignal()
     parameters_signal = pyqtSignal()
     preferences_signal = pyqtSignal()
@@ -509,7 +515,7 @@ class MeasurementWidget(QWidget, BaseView):
 
 
 class CloseWidget(QWidget, BaseView):
-    '''Widget to do something'''
+    '''Widget to close the application'''
     close_signal = pyqtSignal()
     preferences_signal = pyqtSignal()
 

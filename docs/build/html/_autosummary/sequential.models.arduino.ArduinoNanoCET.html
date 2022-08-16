@@ -55,6 +55,11 @@
 <dt class="sig sig-object py" id="sequential.models.arduino.ArduinoNanoCET">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sequential.models.arduino.</span></span><span class="sig-name descname"><span class="pre">ArduinoNanoCET</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#sequential.models.arduino.ArduinoNanoCET" title="Permalink to this definition">¶</a></dt>
 <dd><p>ArduinoModel with modified initialize routine to enable NanoCET software connection check screen</p>
+<p>while the <code class="xref py py-meth docutils literal notranslate"><span class="pre">initialize()</span></code> of the <code class="xref py py-class docutils literal notranslate"><span class="pre">MainSetup()</span></code> runs in a loop 
+triggering the device initialization methods, this <a class="reference internal" href="#sequential.models.arduino.ArduinoNanoCET.initialize" title="sequential.models.arduino.ArduinoNanoCET.initialize"><code class="xref py py-meth docutils literal notranslate"><span class="pre">initialize()</span></code></a> only completes if a device is found,
+otherwise it raises an error.</p>
+<p>The device is found by querying any connected serial devices for their name and expecting ‘Dispertech’ as the beginning.</p>
+<p>Additional getters and setters for laser and LEDs have been added as the query string was changed in the Arduino firmware.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="sequential.models.arduino.ArduinoNanoCET.initialize">
 <span class="sig-name descname"><span class="pre">initialize</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#sequential.models.arduino.ArduinoNanoCET.initialize" title="Permalink to this definition">¶</a></dt>

@@ -1,3 +1,7 @@
+"""
+    Modified Arduino model to acommodate peculiarities of NanoCET operation
+"""
+
 import time
 import pyvisa
 from pyvisa import VisaIOError
@@ -18,6 +22,14 @@ rm = pyvisa.ResourceManager('@py')
 
 class ArduinoNanoCET(ArduinoModel):
     '''ArduinoModel with modified initialize routine to enable NanoCET software connection check screen
+
+    while the :py:meth:`~sequential.models.experiment.MainSetup.initialize` of the :class:`~experiment.MainSetup()` runs in a loop 
+    triggering the device initialization methods, this :meth:`initialize` only completes if a device is found,
+    otherwise it raises an error.
+
+    The device is found by querying any connected serial devices for their name and expecting 'Dispertech' as the beginning.
+
+    Additional getters and setters for laser and LEDs have been added as the query string was changed in the Arduino firmware.
     '''
     def __init__(self, port=None, device=0, baud_rate=9600, initial_config=None):
         super().__init__(port=port, device=device, baud_rate=baud_rate, initial_config=initial_config)

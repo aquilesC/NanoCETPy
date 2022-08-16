@@ -104,6 +104,8 @@ class MovieSaver(ExperimentorProcess):
 
 
 class WaterfallSaver(ExperimentorProcess):
+    """ Modified version of the MovieSaver that processes the each movieframe into a waterfall slice
+    """
     def __init__(self, file, max_memory, frame_rate, saving_event, url, topic='', metadata=None):
         super().__init__()
         self.file = file

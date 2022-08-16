@@ -11,6 +11,8 @@ from experimentor.models.experiments import Experiment
 
 
 class DemoExperiment(Experiment):
+    """ Dummy class with all required experiment methods to run the sequential window without any device attached
+    """
 
     def __init__(self, filename=None):
         super(DemoExperiment, self).__init__(filename=filename)

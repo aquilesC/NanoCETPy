@@ -1,3 +1,7 @@
+"""
+    Modified Basler model to acommodate peculiarities of NanoCET operation
+"""
+
 from pypylon import pylon, _genicam
 
 from experimentor.models.devices.cameras.basler.basler import BaslerCamera
@@ -10,6 +14,10 @@ from experimentor.models.action import Action
 
 class BaslerNanoCET(BaslerCamera):
     '''BaslerCamera with modified initialize routine to enable NanoCET software connection check screen
+
+    while the :py:meth:`~sequential.models.experiment.MainSetup.initialize` of the :class:`~experiment.MainSetup()` runs in a loop 
+    triggering the device initialization methods, this :meth:`initialize` only completes if a device is found,
+    otherwise it raises an error.
     '''
 
     def __init__(self, camera, initial_config=None):

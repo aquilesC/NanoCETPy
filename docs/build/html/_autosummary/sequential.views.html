@@ -49,6 +49,12 @@
             
   <section id="module-sequential.views">
 <span id="sequential-views"></span><h1>sequential.views<a class="headerlink" href="#module-sequential.views" title="Permalink to this heading">¶</a></h1>
+<p>The module containing all GUI elements of the sequential software.</p>
+<p>The main part is the sequential window module containing the PyQT classes used in the GUI.
+Those are a main window and several widgets that are added/removed from it.</p>
+<p>The layout of the used PyQT widgets is created in designer and set to the widget, like so:
+&gt;&gt;&gt; uic.loadUi(os.path.join(BASE_DIR_VIEW, ‘&lt;Some_name&gt;.ui’), self)
+&gt;&gt;&gt; #BASE_DIR_VIEW being the absolute path of the window file</p>
 <p class="rubric">Modules</p>
 <table class="autosummary longtable docutils align-default">
 <tbody>
@@ -58,7 +64,7 @@
 Wrapper around PyQtGraph ImageView.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="sequential.views.sequential_window.html#module-sequential.views.sequential_window" title="sequential.views.sequential_window"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sequential.views.sequential_window</span></code></a></p></td>
-<td><p></p></td>
+<td><p>Module containing the main GUI window and all the functional widgets to be displayed on it.</p></td>
 </tr>
 </tbody>
 </table>
