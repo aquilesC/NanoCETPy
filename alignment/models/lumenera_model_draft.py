@@ -1,3 +1,14 @@
+"""
+    This is a camera model for a Teledyne Lumenera USB camera using the experimentor BaseCamera model
+
+    It is using a python wrapper (unofficial, from Lumenera) for the Lucam API dll.
+    This wrapper consists of :py:module:`..controller.api` :py:module:`..controller.camera` 
+    with the :py:class:`..controller.camera.Camera` class containing the high level pythonic functionality.
+    
+    API reference manual link: `https://www.lumenera.com/lucam-software.html`
+    .. codeauthor:: Jakob Schröder
+"""
+
 from multiprocessing import Lock
 
 import numpy as np
@@ -286,7 +297,7 @@ class LumeneraCamera(BaseCamera):
                 self.temp_image = img[0]
             elif mode == self.MODE_CONTINUOUS:
                 buffer = self._camera.CaptureRawVideoImage()[0]
-                # How to read all of available buffer? 
+                # How to read all of available buffer in the fastest way? 
                 assert buffer is not None
                 img.append(np.frombuffer(buffer, dtype=self.current_dtype).reshape((self.width,self.height), order='F'))
                 self.temp_image = img[0]
@@ -301,7 +312,7 @@ class LumeneraCamera(BaseCamera):
             if len(imgs) >= 1:
                 for img in imgs:
                     self.new_image.emit(img)
-            time.sleep(.001)
+            time.sleep(1 / self.frame_rate)
         self.continuous_reads_running = False
 
     def stop_continuous_reads(self):
