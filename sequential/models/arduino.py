@@ -1,5 +1,7 @@
 """
     Modified Arduino model to acommodate peculiarities of NanoCET operation
+
+    .. todo:: add Features for the front panel LEDs
 """
 
 import time

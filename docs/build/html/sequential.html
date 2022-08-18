@@ -53,6 +53,27 @@
 only ever displaying or giving access to a subset of the experiment.</p>
 <p>While <a class="reference internal" href="_autosummary/sequential.models.experiment.MainSetup.html#sequential.models.experiment.MainSetup" title="sequential.models.experiment.MainSetup"><code class="xref py py-class docutils literal notranslate"><span class="pre">models.experiment.MainSetup</span></code></a> models all the intended functionality of one experiment, 
 the sequence is actually imposed by the GUI, defined in <a href="#id1"><span class="problematic" id="id2">:py:module:`views.sequential_window`</span></a></p>
+<p>The intended sequence is as follows:</p>
+<ol class="arabic">
+<li><p>A connections checkpoint, runnning in a loop until both cameras and the Arduino are detected.</p></li>
+<li><p>Entering the user data</p></li>
+<li><p>Setting up the cartrigde by</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Placing it into the devices</p></li>
+<li><p>Focusing the microscope camera on it using transmission from the top LED</p></li>
+<li><p>Aligning the laser to couple it into the fiber core</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p>Entering the experiment parameters</p></li>
+<li><p>Observing the measurement (video and waterfall)</p></li>
+<li><p>Removing the cartrigde once finished</p></li>
+</ol>
+<div class="admonition-todo admonition" id="id3">
+<p class="admonition-title">Todo</p>
+<p>A popup with a more extensive set of configuration parameters or even for steering the piezos to manually correct alignment would perhaps be useful.</p>
+</div>
 <table class="autosummary longtable docutils align-default">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="_autosummary/sequential.models.html#module-sequential.models" title="sequential.models"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sequential.models</span></code></a></p></td>

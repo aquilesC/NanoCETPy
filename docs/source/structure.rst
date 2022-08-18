@@ -74,4 +74,11 @@ Generally it contains the following information:
 * Information about the identity and configuration parameters of connected component devices like the cameras and Arduino.
 * Some default settings like the acquisition parameters during alignment. 
 
+.. todo:: 
+    
+    Some of these config parameters, especially the defaults (e.g. an ROI where the fiber core is most likely to be found), are device specific
+    and should be stored on the Arduino itself.
+
+    This then also needs a way to exchange this information with the Arduino model
+
 

@@ -229,7 +229,7 @@ class MainSetup(Experiment):
         :type fiber_center: array or tuple of shape (2,)
         :returns: None
         
-        .. todo:: find suitable way to detect laser beam center
+        .. todo:: consider more suitable ways to accurately detect laser beam center
         """
         assert len(fiber_center) == 2
         axis = self.config['electronics']['horizontal_axis']
@@ -273,7 +273,7 @@ class MainSetup(Experiment):
         
         :return: None
             
-        .. todo:: Consider just using mean of image
+        .. todo:: Test how robustly this detects the fiber core and not anything else
         """
         axis = self.config['electronics']['horizontal_axis']
         for i in range(2):

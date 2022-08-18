@@ -20,5 +20,6 @@ This documentation intends to show how to use the code and how it is structured 
    getting_started
    structure
    sequential
+   todo
 
 
