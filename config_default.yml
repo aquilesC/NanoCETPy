@@ -5,9 +5,9 @@
 # All parameters can be changed at runtime with the appropriate config window - not implemented yet
 
 info:
-  user: Aquiles
+  user: User
   files:
-    folder: "C:\\Users\\Jakob Schroeder\\Code\\NanoCETPy\\recorded"
+    folder: "%HOMEPATH%\\NanoCET"
     filename: "Waterfall_{description}_{i}.h5"
     description:
     max_memory: 2500 # In megabytes
@@ -63,6 +63,7 @@ camera_microscope:
     buffer_size: 2000MB
 
 defaults:
+  devices_loading_timeout: 10s
   fiber_center: # fiber core on camera_fiber
   microscope_center: # fiber core on camera_microscope (a line)
   core_width: 30 # width of crop around fiber core on camera_microscope

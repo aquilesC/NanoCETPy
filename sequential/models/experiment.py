@@ -78,9 +78,16 @@ class MainSetup(Experiment):
         config_mic = self.config['camera_microscope']
         self.camera_microscope = Camera(config_mic['init'], initial_config=config_mic['config'])
         self.electronics = ArduinoNanoCET(**self.config['electronics']['arduino'])
+        try:
+            devices_loading_timeout = Q_(self.config['defaults']['devices_loading_timeout']).m_as('s')
+        except:
+            devices_loading_timeout = 30
+            self.logger.info(f'default/devices_loading_timeout parameter not found in config: using {devices_loading_timeout}s')
 
         #Loop over instances until all are initialized
-        while self.active:
+        t0 = time.time()
+        loading_timed_out = False
+        while self.active and not loading_timed_out:
             #self.logger.info('TEST init loop')
             initialized = [self.camera_fiber.initialized, self.camera_microscope.initialized, self.electronics.initialized]
             if all(initialized): return
@@ -100,6 +107,11 @@ class MainSetup(Experiment):
                 except:
                     self.electronics.initializing = False 
                     self.logger.info('Init Exception electronics:', exc_info=True)
+            loading_timed_out = time.time() > t0 + devices_loading_timeout
+        if loading_timed_out:
+            self.logger.error('Loading devices timed out')
+            self.parent.init_failed.emit()
+            return
         self.logger.info('TEST init loop exit')
 
     def focus_start(self):
@@ -450,6 +462,9 @@ class MainSetup(Experiment):
     def prepare_folder(self) -> str:
         """Creates the folder with the proper date, using the base directory given in the config file"""
         base_folder = self.config['info']['files']['folder']
+        # To allow the use of environmental variables like %HOMEPATH%
+        for key, val in os.environ:
+            base_folder = base_folder.replace('%'+key+'%', val)
         today_folder = f'{datetime.today():%Y-%m-%d}'
         folder = os.path.join(base_folder, today_folder)
         if not os.path.isdir(folder):
@@ -487,9 +502,11 @@ class MainSetup(Experiment):
         with open('config_user.yml', 'w') as f:
             yaml.dump(self.config, f, default_flow_style=False)
 
-        self.camera_microscope.finalize()
-        self.set_laser_power(0)
-        self.electronics.finalize()
+        if self.camera_microscope:
+            self.camera_microscope.finalize()
+        if self.electronics:
+            self.set_laser_power(0)
+            self.electronics.finalize()
 
         super(MainSetup, self).finalize()
         self.finalized = True

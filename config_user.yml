@@ -39,6 +39,7 @@ camera_microscope:
 defaults:
   alignment: null
   core_width: 30
+  devices_loading_timeout: 10s
   fiber_center: null
   laser_focusing:
     high:
@@ -75,6 +76,6 @@ info:
   files:
     description: Test with water
     filename: Waterfall_{description}_{i}.h5
-    folder: C:\disper\NanoCETPy\recorded
+    folder: '%HOMEPATH%\NanoCET'
     max_memory: 2500
-  user: Matthijs
+  user: User

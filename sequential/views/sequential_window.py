@@ -27,6 +27,7 @@ logger = get_logger(__name__)
 class SequentialMainWindow(QMainWindow, BaseView):
     '''Main Window of the Application with current UI being displayed on the main_widget.
     Listens to signals from this widget to change views'''
+    init_failed = pyqtSignal()
 
     def __init__(self, experiment=None):
         super(SequentialMainWindow, self).__init__()
@@ -43,6 +44,7 @@ class SequentialMainWindow(QMainWindow, BaseView):
 
         uic.loadUi(os.path.join(BASE_DIR_VIEW, 'Sequential_Main_Window.ui'), self)
         self.experiment = experiment
+        self.experiment.parent = self  # Setting the SequentialMainWindow as the parent of experiment class
         self.setWindowIcon(QtGui.QIcon(os.path.join(BASE_DIR_VIEW, 'dispertech-logo.png')))
         
         self.sequence = ['\u2460 Startup\n', '\u2461 Place \ncartridge', '\u2462 Focus and \nAlign', '\u2463 Set up \nexperiment', '\u2464 Measure-\nment\n']
@@ -55,6 +57,7 @@ class SequentialMainWindow(QMainWindow, BaseView):
              }
         self.left_frame.layout().addStretch()
         self.right_frame.layout().addStretch()
+        self.init_failed.connect(self.initializing_failed)
         self.startup_w()
     
     def startup_w(self):
@@ -151,6 +154,17 @@ class SequentialMainWindow(QMainWindow, BaseView):
         for i in reversed(range(self.main_widget.layout().count())):
             widget = self.main_widget.layout().itemAt(i).widget()
             if widget: widget.deleteLater()
+
+    @pyqtSlot()
+    def initializing_failed(self):
+        msgBox = QMessageBox(parent=self)
+        # msgBox.setIcon(QMessageBox.Close)
+        msgBox.setText("Could not detect all devices.\nCheck usb connection or drivers.")
+        msgBox.setWindowTitle("Initializing failed")
+        msgBox.setStandardButtons(QMessageBox.Close)
+        button = msgBox.exec()
+        if button == QMessageBox.Close:
+            self.close()
 
     def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
         if self.experiment.saving:
