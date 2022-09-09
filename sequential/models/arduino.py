@@ -49,6 +49,7 @@ class ArduinoNanoCET(ArduinoModel):
                     if not self.port:
                         self.port = Arduino.list_devices()[self.device]
                     self.driver = rm.open_resource(self.port)
+                    time.sleep(1)
                 except:
                     raise SerialException()
                 self.driver.baud_rate = self.baud_rate
@@ -57,10 +58,10 @@ class ArduinoNanoCET(ArduinoModel):
                 if len(device_ports) == 0: raise Exception()
                 for port in device_ports:
                     try:
-                        self.driver = rm.open_resource(port)
-                        self.driver.baud_rate = self.baud_rate
-                        time.sleep(.1)
-                        if self.driver.query('IDN').startswith('Dispertech'): break
+                        self.driver = rm.open_resource(port, baud_rate=115200)
+                        time.sleep(1)
+                        if self.driver.query('IDN').startswith('Dispertech'):
+                            break
                         self.driver.close()
                     except:
                         try:
@@ -78,6 +79,7 @@ class ArduinoNanoCET(ArduinoModel):
                 try:
                     self.driver.read()
                 except VisaIOError:
+                    print('another error')
                     pass
             self.config.fetch_all()
             if self.initial_config is not None:
