@@ -36,8 +36,7 @@ class Window(QWidget):
 
         grid = QGridLayout()
         self.sliders = []
-
-        grid.addWidget(QPushButton('OFF', clicked=lambda: [s.setValue(0) for s in self.sliders]), 0, 0)
+        grid.addWidget(QPushButton('All OFF', clicked=lambda: [s.setValue(0) for s in self.sliders]), 0, 0)
         grid.addWidget(self.led_slider('Top', self.arduino.top_led, max_val=1), 0, 2)
         grid.addWidget(self.led_slider('Fiber', self.arduino.fiber_led, max_val=1), 0, 3)
         grid.addWidget(self.led_slider('Power', lambda status: self.arduino.driver.query(f'LED:POWER:{status}')), 1, 0)
@@ -46,11 +45,17 @@ class Window(QWidget):
         grid.addWidget(self.led_slider('Measuring', lambda status: self.arduino.driver.query(f'LED:MEASURING:{status}')), 1, 3)
         grid.addWidget(self.laser_slider('Laser', grid.columnCount(), 10, 100), 2, 0, 1, grid.columnCount())
 
-        # grid.addWidget(self.add_LED_slider('Laser', lambda status: self.arduino.driver.query(f'LED:MEASURING:{status}'), max_val=100), 2, 1, 1, 3)
+        self.piezo_speed = QSpinBox(value=10, maximum=2**6-1)
+        box_speed = QGroupBox('Piezo speed')
+        layout_speed = QGridLayout()
+        layout_speed.addWidget(self.piezo_speed, 0, 0)
+        box_speed.setLayout(layout_speed)
 
+        for i, name in {1: 'Mirror V?', 2:'Mirror H?', 3: 'Lens'}.items():
+            grid.addWidget(self.piezo(i, name), 3, i - 1)
+
+        grid.addWidget(box_speed, 3, 3)
         self.setLayout(grid)
-
-
 
         arduino.initialize()
         while not arduino.initialized:
@@ -61,7 +66,13 @@ class Window(QWidget):
             if not idn.lower().startswith('dispertech'):
                 print("WARNING: IDN string doesn't contain 'Dispertech'")
 
-
+    def piezo(self, axis, name):
+        groupBox = QGroupBox('Piezo '+name)
+        layout = QGridLayout()
+        layout.addWidget(QPushButton('-', clicked=lambda: self.arduino.move_piezo(self.piezo_speed.value(), 0, axis), maximumWidth=40), 0, 0)
+        layout.addWidget(QPushButton('+', clicked=lambda: self.arduino.move_piezo(self.piezo_speed.value(), 1, axis), maximumWidth=40), 0, 1)
+        groupBox.setLayout(layout)
+        return groupBox
 
     def laser_slider(self, name, gridspan=4, step=10, max_val=100):
         groupBox = QGroupBox(name)
@@ -76,25 +87,28 @@ class Window(QWidget):
         slider.setSingleStep(step)
         self.sliders.append(slider)
 
-        # slider.setSingleStep(step)
+        def set_laser(value):
+            print(f'Setting {name} to {value}')
+            self.arduino.scattering_laser = value
+
         def spin_changed(value):
             slider.setValue(value)
+            set_laser(value)
 
         def slider_changed(value):
             spinbox.setValue(value)
+            set_laser(value)
 
         spinbox.valueChanged.connect(spin_changed)
         slider.valueChanged.connect(slider_changed)
-        hbox = QHBoxLayout()
-        hbox.addWidget(spinbox)
-        hbox.addWidget(slider)
-        # grid.addStretch(1)
-        groupBox.setLayout(hbox)
+        layout = QGridLayout()
+        layout.addWidget(spinbox, 0, 0)
+        layout.addWidget(slider, 0, 1)
+        groupBox.setLayout(layout)
         return groupBox
 
     def led_slider(self, name, arduino_property, max_val=2):
         groupBox = QGroupBox(name)
-
         slider = QSlider(Qt.Horizontal)
         slider.setFocusPolicy(Qt.StrongFocus)
         slider.setTickPosition(QSlider.TicksBothSides)
@@ -104,14 +118,9 @@ class Window(QWidget):
         print(slider.pageStep())
         slider.valueChanged.connect(call_back(arduino_property, name=name))
         self.sliders.append(slider)
-        # @pyqtSlot
-        # def test(value):
-        #     print(value)
-        # slider.valueChanged.connect(test)
-        grid = QGridLayout()
-        grid.addWidget(slider, 0, 0)
-        # vbox.addStretch(1)
-        groupBox.setLayout(grid)
+        layout = QGridLayout()
+        layout.addWidget(slider, 0, 0)
+        groupBox.setLayout(layout)
 
         return groupBox
 
@@ -127,5 +136,4 @@ if __name__ == '__main__':
     arduino = ArduinoNanoCET(baud_rate=115200)
     app = QApplication(sys.argv)
     window = Window(arduino)
-    # window.show()
     sys.exit(app.exec())
