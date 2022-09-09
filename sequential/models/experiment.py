@@ -139,7 +139,7 @@ class MainSetup(Experiment):
         self.logger.info('TEST Starting Laser Alignment')
         self.active = True
         self.now = datetime.now()
-        self.saving_images = True
+        self.saving_images = False  # TODO: If turning on, also fix hard-coded path
 
         if False: # TESTING
             time.sleep(5)
@@ -462,14 +462,19 @@ class MainSetup(Experiment):
     def prepare_folder(self) -> str:
         """Creates the folder with the proper date, using the base directory given in the config file"""
         base_folder = self.config['info']['files']['folder']
-        # To allow the use of environmental variables like %HOMEPATH%
-        for key, val in os.environ:
-            base_folder = base_folder.replace('%'+key+'%', val)
         today_folder = f'{datetime.today():%Y-%m-%d}'
         folder = os.path.join(base_folder, today_folder)
         if not os.path.isdir(folder):
             os.makedirs(folder)
         return folder
+
+    def load_configuration(self, *args, **kwargs):
+        super().load_configuration(*args, **kwargs)
+        # To allow the use of environmental variables like %HOMEPATH%
+        folder = self.config['info']['files']['folder']
+        for key, val in os.environ.items():
+            folder = folder.replace('%'+key+'%', val)
+        self.config['info']['files']['folder'] = os.path.abspath(folder)
 
     def get_filename(self, base_filename: str) -> str:
         """Checks if the given filename exists in the given folder and increments a counter until the first non-used

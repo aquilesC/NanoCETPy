@@ -63,7 +63,7 @@ camera_microscope:
     buffer_size: 2000MB
 
 defaults:
-  devices_loading_timeout: 10s
+  devices_loading_timeout: 15s
   fiber_center: # fiber core on camera_fiber
   microscope_center: # fiber core on camera_microscope (a line)
   core_width: 30 # width of crop around fiber core on camera_microscope

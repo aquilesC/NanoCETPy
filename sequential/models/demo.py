@@ -70,6 +70,14 @@ class DemoExperiment(Experiment):
         self.saving=False
         pass
 
+    def load_configuration(self, *args, **kwargs):
+        super().load_configuration(*args, **kwargs)
+        # To allow the use of environmental variables like %HOMEPATH%
+        folder = self.config['info']['files']['folder']
+        for key, val in os.environ.items():
+            folder = folder.replace('%'+key+'%', val)
+        self.config['info']['files']['folder'] = os.path.abspath(folder)
+
     def finalize(self):
         with open('config_user.yml', 'w') as f:
             yaml.dump(self.config, f, default_flow_style=False)

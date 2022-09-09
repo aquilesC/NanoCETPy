@@ -450,10 +450,14 @@ class MeasurementWidget(QWidget, BaseView):
         self.waterfall_timer.start(50)
 
     def update_helptext_label(self):
+        """
+        TODO: The naming in the GUI needs to change (because it shows incorrect file), but this should be part of a whole update of saving procedure.
+        """
         try:
-            files = [x for x in os.listdir(self.experiment.prepare_folder()) if x.endswith(".h5")]
-            newest = max(files , key = os.path.getctime)
-        except:
+            data_folder = self.experiment.prepare_folder()
+            files = [x for x in os.listdir(data_folder) if x.endswith(".h5")]
+            newest = max(files, key=lambda fname: os.path.getctime(os.path.join(data_folder, fname)))
+        except Exception as e:
             newest = "Test_Experiment_001.hf"
         if self.experiment.active:
             self.helptext_label.setText(
