@@ -16,33 +16,41 @@ import time
 #     def send_command(self, value):
 #         self.arduino.
 
+from PyQt5.QtGui import QFont
+
 class call_back:
-    def __init__(self, property, name):
-        self.property = property
+    def __init__(self, arduino, property_name, name):
+        self.arduino = arduino
+        self.property_name = property_name
         self.name = name
 
     def __call__(self, value):
         print('setting', self.name, 'to', value)
-        self.property = value
+        setattr(self.arduino, self.property_name, value)
+        # self.property = value
 
 class Window(QWidget):
     def __init__(self, arduino):
         super(Window, self).__init__()
+        custom_font = QFont()
+        custom_font.setPointSize(14)
+        self.setFont(custom_font)
         self.setWindowTitle("Electronics Testing NanoCET: Loading")
-        self.resize(500, 300)
+        self.resize(800, 500)
         self.show()
 
         self.arduino = arduino
 
         grid = QGridLayout()
         self.sliders = []
-        grid.addWidget(QPushButton('All OFF', clicked=lambda: [s.setValue(0) for s in self.sliders]), 0, 0)
-        grid.addWidget(self.led_slider('Top', self.arduino.top_led, max_val=1), 0, 2)
-        grid.addWidget(self.led_slider('Fiber', self.arduino.fiber_led, max_val=1), 0, 3)
-        grid.addWidget(self.led_slider('Power', lambda status: self.arduino.driver.query(f'LED:POWER:{status}')), 1, 0)
-        grid.addWidget(self.led_slider('Cartridge', lambda status: self.arduino.driver.query(f'LED:CARTRIDGE:{status}')), 1, 1)
-        grid.addWidget(self.led_slider('Sample', lambda status: self.arduino.driver.query(f'LED:SAMPLE:{status}')), 1, 2)
-        grid.addWidget(self.led_slider('Measuring', lambda status: self.arduino.driver.query(f'LED:MEASURING:{status}')), 1, 3)
+        grid.addWidget(QPushButton('All Off', clicked=lambda: [s.setValue(0) for s in self.sliders]), 0, 0)
+        grid.addWidget(self.led_slider('Top', 'top_led', max_val=1), 0, 1)
+        grid.addWidget(self.led_slider('Fiber', 'fiber_led', max_val=1), 0, 2)
+        grid.addWidget(self.led_slider('Side', 'side_led', max_val=1), 0, 3)
+        grid.addWidget(self.led_slider('Power', 'power_led'), 1, 0)
+        grid.addWidget(self.led_slider('Cartridge', 'cartridge_led'), 1, 1)
+        grid.addWidget(self.led_slider('Sample', 'sample_led'), 1, 2)
+        grid.addWidget(self.led_slider('Measuring', 'measuring_led'), 1, 3)
         grid.addWidget(self.laser_slider('Laser', grid.columnCount(), 10, 100), 2, 0, 1, grid.columnCount())
 
         self.piezo_speed = QSpinBox(value=10, maximum=2**6-1)
@@ -51,7 +59,7 @@ class Window(QWidget):
         layout_speed.addWidget(self.piezo_speed, 0, 0)
         box_speed.setLayout(layout_speed)
 
-        for i, name in {1: 'Mirror V?', 2:'Mirror H?', 3: 'Lens'}.items():
+        for i, name in {1: 'Mirror V?', 2: 'Mirror H?', 3: 'Lens'}.items():
             grid.addWidget(self.piezo(i, name), 3, i - 1)
 
         grid.addWidget(box_speed, 3, 3)
@@ -69,8 +77,8 @@ class Window(QWidget):
     def piezo(self, axis, name):
         groupBox = QGroupBox('Piezo '+name)
         layout = QGridLayout()
-        layout.addWidget(QPushButton('-', clicked=lambda: self.arduino.move_piezo(self.piezo_speed.value(), 0, axis), maximumWidth=40), 0, 0)
-        layout.addWidget(QPushButton('+', clicked=lambda: self.arduino.move_piezo(self.piezo_speed.value(), 1, axis), maximumWidth=40), 0, 1)
+        layout.addWidget(QPushButton('-', clicked=lambda: self.arduino.move_piezo(self.piezo_speed.value(), 0, axis), maximumWidth=60), 0, 0)
+        layout.addWidget(QPushButton('+', clicked=lambda: self.arduino.move_piezo(self.piezo_speed.value(), 1, axis), maximumWidth=60), 0, 1)
         groupBox.setLayout(layout)
         return groupBox
 
@@ -116,7 +124,7 @@ class Window(QWidget):
         slider.setPageStep(1)
         slider.setTickInterval(1)
         print(slider.pageStep())
-        slider.valueChanged.connect(call_back(arduino_property, name=name))
+        slider.valueChanged.connect(call_back(arduino, arduino_property, name=name))
         self.sliders.append(slider)
         layout = QGridLayout()
         layout.addWidget(slider, 0, 0)

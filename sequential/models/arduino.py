@@ -59,7 +59,8 @@ class ArduinoNanoCET(ArduinoModel):
                 for port in device_ports:
                     try:
                         self.driver = rm.open_resource(port, baud_rate=115200)
-                        time.sleep(1)
+                        time.sleep(2)
+                        self.driver.query('IDN')
                         if self.driver.query('IDN').startswith('Dispertech'):
                             break
                         self.driver.close()
@@ -128,3 +129,57 @@ class ArduinoNanoCET(ArduinoModel):
             self.driver.query(f'LED:FIBER:{status}')
             self._fiber_led = status
             self.logger.info(f'LED:FIBER:{status}')
+
+    @Feature()
+    def side_led(self):
+        return self._side_led
+
+    @side_led.setter
+    def side_led(self, status):
+        with self.query_lock:
+            self.driver.query(f'LED:SIDE:{status}')
+            self._side_led = status
+            self.logger.info(f'LED:SIDE:{status}')
+    @Feature()
+    def power_led(self):
+        return self._power_led
+
+    @power_led.setter
+    def power_led(self, status):
+        with self.query_lock:
+            self.driver.query(f'LED:POWER:{status}')
+            self._power_led = status
+            self.logger.info(f'LED:POWER:{status}')
+
+    @Feature()
+    def cartridge_led(self):
+        return self._cartridge_led
+
+    @cartridge_led.setter
+    def cartridge_led(self, status):
+        with self.query_lock:
+            self.driver.query(f'LED:CARTRIDGE:{status}')
+            self._cartridge_led = status
+            self.logger.info(f'LED:CARTRIDGE:{status}')
+
+    @Feature()
+    def sample_led(self):
+        return self._sample_led
+
+    @sample_led.setter
+    def sample_led(self, status):
+        with self.query_lock:
+            self.driver.query(f'LED:SAMPLE:{status}')
+            self._sample_led = status
+            self.logger.info(f'LED:SAMPLE:{status}')
+
+    @Feature()
+    def measuring_led(self):
+        return self._measuring_led
+
+    @measuring_led.setter
+    def measuring_led(self, status):
+        with self.query_lock:
+            self.driver.query(f'LED:MEASURING:{status}')
+            self._measuring_led = status
+            self.logger.info(f'LED:MEASURING:{status}')
