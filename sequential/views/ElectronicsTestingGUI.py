@@ -123,7 +123,6 @@ class Window(QWidget):
         slider.setRange(0, max_val)
         slider.setPageStep(1)
         slider.setTickInterval(1)
-        print(slider.pageStep())
         slider.valueChanged.connect(call_back(arduino, arduino_property, name=name))
         self.sliders.append(slider)
         layout = QGridLayout()

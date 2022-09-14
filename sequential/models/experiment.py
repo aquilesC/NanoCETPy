@@ -142,7 +142,7 @@ class MainSetup(Experiment):
         self.logger.info('TEST Starting Laser Alignment')
         self.active = True
         self.now = datetime.now()
-        self.saving_images = False  # TODO: If turning on, also fix hard-coded path
+        self.saving_images = True
 
         if False: # TESTING
             time.sleep(5)
@@ -163,7 +163,7 @@ class MainSetup(Experiment):
         self.electronics.fiber_led = 0
         self.electronics.top_led = 0
         self.electronics.side_led = 0
-        self.set_laser_power(3)
+        img = self.set_laser_power(3)  # TODO: I found that a power of 3 isn't always above lasing threshold !!!
         # Find focus function
         self.find_focus()
         self.logger.info('TEST focus done')
@@ -176,8 +176,8 @@ class MainSetup(Experiment):
 
         # Find center
         self.camera_fiber.trigger_camera()
-        img = self.camera_fiber.read_camera()[-1]
-        
+        self.img_fiber_facet = self.camera_fiber.read_camera()[-1]
+        img = self.img_fiber_facet
         #fiber = ut.image_convolution(img, kernel = np.ones((3,3)))
         #mask = ut.gaussian2d_array((int(fiber.shape[0]/2),int(fiber.shape[1]/2)),20000,fiber.shape)
         #fibermask = fiber * mask
@@ -189,7 +189,6 @@ class MainSetup(Experiment):
         fibermask = ut.image_convolution(fiber, kernel=kernel)
 
         fiber_center = np.argwhere(fibermask==np.max(fibermask))[0]
-        if self.saving_images: io.imsave('recorded/fiber'+self.now.strftime('_%M_%S')+'.tiff', img)
         self.logger.info(f'TEST fiber center is {fiber_center}')
         # Turn off LED
         self.electronics.fiber_led = 0
@@ -235,7 +234,9 @@ class MainSetup(Experiment):
             if val_old < val_new: 
                 direction = (direction + 1) % 2
                 speed -= 5
-            if speed == 20: return
+            if speed == 20:
+                self.img_find_focus = img
+                return
 
     def align_laser_coarse(self, fiber_center):
         """ Aligns the focussed laser beam to the previously detected center of the fiber.
@@ -279,7 +280,7 @@ class MainSetup(Experiment):
                     speed = 1
             axis = self.config['electronics']['vertical_axis']
         
-        if self.saving_images: io.imsave('recorded/laser'+self.now.strftime('_%M_%S')+'.tiff', img)
+        self.img_align_laser_course = img
 
     def align_laser_fine(self):
         """ Maximises the fiber core scattering signal seen on the microscope cam by computing the median along axis 0.
@@ -316,7 +317,7 @@ class MainSetup(Experiment):
                     check = True
             axis = self.config['electronics']['vertical_axis']
         
-        if self.saving_images: io.imsave('recorded/line'+self.now.strftime('_%M_%S')+'.tiff', img)
+        self.img_align_laser_fine = img
 
     @make_async_thread
     def find_ROI(self, crop=False):
@@ -385,6 +386,13 @@ class MainSetup(Experiment):
         base_filename = self.config['info']['files']['filename']
         file = self.get_filename(base_filename)
         self.saving_event.clear()
+        if self.saving_images:
+            alignment_images = {'focus_laser': self.img_find_focus,
+                                'fiber_facet':self.img_fiber_facet,
+                                'align_laser':self.img_align_laser_course,
+                                'scattering_optimization':self.img_align_laser_fine}
+        else:
+            alignment_images = {}
         self.saving_process = WaterfallSaver(
             file,
             self.config['info']['files']['max_memory'],
@@ -392,6 +400,7 @@ class MainSetup(Experiment):
             self.saving_event,
             self.camera_microscope.new_image.url,
             topic='new_image',
+            alignment_images=alignment_images,
             metadata=self.camera_microscope.config.all(),
         )
 

@@ -106,7 +106,7 @@ class MovieSaver(ExperimentorProcess):
 class WaterfallSaver(ExperimentorProcess):
     """ Modified version of the MovieSaver that processes the each movieframe into a waterfall slice
     """
-    def __init__(self, file, max_memory, frame_rate, saving_event, url, topic='', metadata=None):
+    def __init__(self, file, max_memory, frame_rate, saving_event, url, topic='', alignment_images={}, metadata=None):
         super().__init__()
         self.file = file
         self.max_memory = max_memory
@@ -121,6 +121,7 @@ class WaterfallSaver(ExperimentorProcess):
             if isinstance(value, Q_):
                 metadata[key] = str(value)
         self.metadata = metadata
+        self.alignment_images = alignment_images
         self.start()
 
     def run(self) -> None:
@@ -173,6 +174,10 @@ class WaterfallSaver(ExperimentorProcess):
                     meta.update(self.metadata)
                     metadata = json.dumps(meta)
                     mdset = g.create_dataset('metadata', data=metadata.encode("utf-8", "ignore"))
+                    if self.alignment_images:
+                        alignment_group = g.create_group('alignment_images')
+                        for name, array in self.alignment_images.items():
+                            alignment_group.create_dataset(name, data=array)
 
                 d[:, i] = img
                 i += 1
