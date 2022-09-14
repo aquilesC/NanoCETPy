@@ -460,13 +460,18 @@ class MeasurementWidget(QWidget, BaseView):
         except Exception as e:
             newest = "Test_Experiment_001.hf"
         if self.experiment.active:
+            new_filename = self.experiment.get_filename("")
+            filename_split = new_filename.split(os.path.sep)
             self.helptext_label.setText(
                 f"Measurement ongoing"
-                f"\n\nData being saved to {newest}"
+                f"\n\nData being saved to:\n"
+                f"{os.path.sep.join(filename_split[:-1])}{os.path.sep}"
+                f"\n{filename_split[-1]}"
                 f"\n\nLaser power:\t{self.experiment.electronics.scattering_laser}"
                 f"\nExposure time:\t{self.experiment.camera_microscope.config['exposure']}"
                 f"\nGain:\t{self.experiment.camera_microscope.config['gain']}")
         else:
+
             self.helptext_label.setText(
                 f"Measurement finished"
                 f"\n\nData was saved to {newest}"

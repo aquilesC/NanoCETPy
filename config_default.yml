@@ -9,7 +9,7 @@ info:
   files:
     folder: "%HOMEPATH%\\NanoCET"
     filename: "Waterfall_{description}_{i}.h5"
-    description:
+    description: Test
     max_memory: 2500 # In megabytes
 
 GUI:

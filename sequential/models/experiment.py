@@ -115,6 +115,9 @@ class MainSetup(Experiment):
         self.logger.info('TEST init loop exit')
 
     def focus_start(self):
+        """
+        Live view for manual focussing of microscope.
+        """
         self.set_live(self.camera_microscope, False)
         self.set_live(self.camera_fiber, False)
         while self.camera_microscope.free_run_running: time.sleep(.1)
@@ -459,6 +462,14 @@ class MainSetup(Experiment):
     def get_waterfall_image(self):
         return self.waterfall_image
 
+    def load_configuration(self, *args, **kwargs):
+        super().load_configuration(*args, **kwargs)
+        # To allow the use of environmental variables like %HOMEPATH%
+        folder = self.config['info']['files']['folder']
+        for key, val in os.environ.items():
+            folder = folder.replace('%'+key+'%', val)
+        self.config['info']['files']['folder'] = os.path.abspath(folder)
+
     def prepare_folder(self) -> str:
         """Creates the folder with the proper date, using the base directory given in the config file"""
         base_folder = self.config['info']['files']['folder']
@@ -468,14 +479,6 @@ class MainSetup(Experiment):
             os.makedirs(folder)
         return folder
 
-    def load_configuration(self, *args, **kwargs):
-        super().load_configuration(*args, **kwargs)
-        # To allow the use of environmental variables like %HOMEPATH%
-        folder = self.config['info']['files']['folder']
-        for key, val in os.environ.items():
-            folder = folder.replace('%'+key+'%', val)
-        self.config['info']['files']['folder'] = os.path.abspath(folder)
-
     def get_filename(self, base_filename: str) -> str:
         """Checks if the given filename exists in the given folder and increments a counter until the first non-used
         filename is available.
@@ -483,14 +486,13 @@ class MainSetup(Experiment):
         :param base_filename: must have two placeholders {description} and {i}
         :returns: full path to the file where to save the data
         """
+        if base_filename == "":
+            base_filename = self.config['info']['files']['filename']
         folder = self.prepare_folder()
-        i = 0
+        i = 1
         description = self.config['info']['files']['description']
-        while os.path.isfile(os.path.join(folder, base_filename.format(
-                description=description,
-                i=i))):
+        while os.path.isfile(os.path.join(folder, base_filename.format(description=description, i=i))):
             i += 1
-
         return os.path.join(folder, base_filename.format(description=description, i=i))
 
     def finalize(self):
