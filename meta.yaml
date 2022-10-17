@@ -33,7 +33,7 @@ about:
   home: https://github.com/Dispertech/NanoCETPy
   summary: NanoCET Control and Analysis Software
   license: GPL-3.0-or-later
-  license_file: PLEASE_ADD_LICENSE_FILE
+  license_file: LICENSE.md
 
 extra:
   recipe-maintainers:
