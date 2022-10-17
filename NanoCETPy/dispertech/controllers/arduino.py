@@ -10,8 +10,9 @@
 from time import sleep
 
 import pyvisa
+
 # TODO: Make more flexible which bacend will be used for PyVisa
-from dispertech.util.log import get_logger
+from experimentor.lib.log import get_logger
 
 rm = pyvisa.ResourceManager('@py')
 logger = get_logger(__name__)

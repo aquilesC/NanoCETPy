@@ -1,23 +1,16 @@
-import os
-from ssl import ALERT_DESCRIPTION_ACCESS_DENIED
 import time
 from datetime import datetime
 
-from skimage import data, io
 import numpy as np
-from . import model_utils as ut
+from skimage import data, io
 
-from experimentor.models.action import Action
 from experimentor import Q_
-#from experimentor.models.devices.cameras.basler.basler import BaslerCamera as Camera
-from .lumenera_model_draft import LumeneraCamera
-from experimentor.models.devices.cameras.exceptions import CameraTimeout
-from experimentor.models.experiments import Experiment
-from dispertech.models.electronics.arduino import ArduinoModel
-from .arduino import ArduinoExperimental
+from experimentor.models.action import Action
 from experimentor.models.decorators import make_async_thread
-
-
+from experimentor.models.experiments import Experiment
+from . import model_utils as ut
+from .arduino import ArduinoExperimental
+from .lumenera_model_draft import LumeneraCamera
 
 
 class AlignmentSetup(Experiment):

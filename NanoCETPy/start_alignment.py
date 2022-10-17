@@ -1,14 +1,13 @@
-import logging
-import time
 import os
 import sys
+import time
 
 import yaml
 from PyQt5.QtWidgets import QApplication
 
-from alignment.models.experiment import AlignmentSetup
-from alignment.views.cam_window import AlignmentWindow, CartridgeWindow
-from experimentor.lib.log import log_to_screen, get_logger
+from experimentor.lib.log import get_logger, log_to_screen
+from .alignment.models.experiment import AlignmentSetup
+from .alignment.views.cam_window import AlignmentWindow, CartridgeWindow
 
 if __name__ == "__main__":
     logger = get_logger()

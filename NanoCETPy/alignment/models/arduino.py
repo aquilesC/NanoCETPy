@@ -1,17 +1,10 @@
 import time
+
 import pyvisa
-from pyvisa import VisaIOError
-from serial import SerialException
 
-from dispertech.models.electronics.arduino import ArduinoModel
-from dispertech.controller.devices.arduino.arduino import Arduino
-
-
+from NanoCETPy.dispertech.models.arduino import ArduinoModel
 from experimentor.lib.log import get_logger, log_to_screen
-from experimentor.models.decorators import make_async_thread
 from experimentor.models import Feature
-
-
 
 rm = pyvisa.ResourceManager('@py')
 

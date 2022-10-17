@@ -1,13 +1,13 @@
-from ast import AsyncFunctionDef
 import os
 import time
+
 import numpy as np
 
 BASE_DIR_VIEW = os.path.dirname(os.path.abspath(__file__))
 
 from PyQt5 import uic, QtGui
 from PyQt5.QtCore import QTimer
-from PyQt5.QtWidgets import QMainWindow, QStatusBar
+from PyQt5.QtWidgets import QMainWindow
 import pyqtgraph as pg
 
 from experimentor import Q_

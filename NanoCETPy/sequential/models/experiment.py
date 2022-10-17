@@ -12,29 +12,23 @@ SKIP_FIRST_LINES_IN_TEST_DATA = 500
 USE_TEST_DATA = False
 
 import os
-from ssl import ALERT_DESCRIPTION_ACCESS_DENIED
 import time
 from datetime import datetime
 from multiprocessing import Event
-from serial import SerialException
-import yaml
 
-from skimage import data, filters, io
 import numpy as np
+import yaml
 from scipy import optimize
-from . import model_utils as ut
+from skimage import data
 
-from experimentor.models.action import Action
 from experimentor import Q_
-#from experimentor.models.devices.cameras.basler.basler import BaslerCamera as Camera
-from .basler import BaslerNanoCET as Camera
-from experimentor.models.devices.cameras.exceptions import CameraTimeout
-from experimentor.models.experiments import Experiment
-#from dispertech.models.electronics.arduino import ArduinoModel
-from .arduino import ArduinoNanoCET
+from experimentor.models.action import Action
 from experimentor.models.decorators import make_async_thread
+from experimentor.models.experiments import Experiment
+from . import model_utils as ut
+from .arduino import ArduinoNanoCET
+from .basler import BaslerNanoCET as Camera
 from .movie_saver import WaterfallSaver
-from experimentor.core.signal import Signal
 
 
 class MainSetup(Experiment):

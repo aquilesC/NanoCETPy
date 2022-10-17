@@ -9,26 +9,20 @@
     .. codeauthor:: Jakob Schröder
 """
 
+import inspect
 from multiprocessing import Lock
 
 import numpy as np
-import time
-from threading import Event
-import sys
-import inspect
-
-from ..controller.lucamapi.api import *
-from ..controller.lucamapi.camera import *     
 
 from experimentor import Q_
 from experimentor.core.signal import Signal
 from experimentor.lib.log import get_logger
+from experimentor.models import Feature
 from experimentor.models.action import Action
-from experimentor.models.decorators import make_async_thread, not_implemented
-from experimentor.models.devices.cameras.exceptions import WrongCameraState, CameraException
+from experimentor.models.decorators import make_async_thread
 from experimentor.models.devices.cameras.base_camera import BaseCamera
 from experimentor.models.devices.cameras.exceptions import CameraNotFound
-from experimentor.models import Feature
+from ..controller.lucamapi.camera import *
 
 
 class LumeneraCamera(BaseCamera):

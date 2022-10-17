@@ -1,14 +1,14 @@
 import os
 import time
+
 import numpy as np
 
 BASE_DIR_VIEW = os.path.dirname(os.path.abspath(__file__))
 
 from PyQt5 import uic, QtGui
 from PyQt5.QtCore import QTimer
-from PyQt5.QtWidgets import QMainWindow, QStatusBar
+from PyQt5.QtWidgets import QMainWindow
 
-from experimentor import Q_
 from experimentor.lib.log import get_logger
 from experimentor.views.base_view import BaseView
 from experimentor.views.camera.camera_viewer_widget import CameraViewerWidget

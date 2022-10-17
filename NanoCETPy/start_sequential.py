@@ -9,17 +9,18 @@ TODO:   (low priority) Sometimes there are json related python errors when closi
         These don't appear to cause actual trouble though.
 """
 
-import sys
 import os
-BASE_DIR_VIEW = os.path.dirname(os.path.abspath(__file__))
+import sys
 
 import yaml
 from PyQt5.QtWidgets import QApplication
 
-from sequential.models.experiment import MainSetup
-from sequential.models.demo import DemoExperiment
-from sequential.views.sequential_window import SequentialMainWindow
+from NanoCETPy.sequential.models.experiment import MainSetup
+from NanoCETPy.sequential.models.demo import DemoExperiment
+from NanoCETPy.sequential.views.sequential_window import SequentialMainWindow
 from experimentor.lib.log import log_to_screen, get_logger
+
+BASE_DIR_VIEW = os.path.dirname(os.path.abspath(__file__))
 
 if __name__ == "__main__":
     logger = get_logger()
@@ -31,7 +32,7 @@ if __name__ == "__main__":
     if os.path.isfile(os.path.join(BASE_DIR_VIEW, 'config_user.yml')):
         config_filepath = 'config_user.yml'
     else:
-        config_filepath = 'config_default.yml'
+        config_filepath = 'resources/config_default.yml'
     experiment.load_configuration(config_filepath, yaml.UnsafeLoader)
 
     #QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)

@@ -1,13 +1,14 @@
-import numpy as np
-import time
-from skimage import io
 import os
+
+import time
+
 import yaml
-BASE_DIR_VIEW = os.path.dirname(os.path.abspath(__file__))
+from skimage import io
 
 from experimentor.models.action import Action
 from experimentor.models.experiments import Experiment
 
+BASE_DIR_VIEW = os.path.dirname(os.path.abspath(__file__))
 
 
 class DemoExperiment(Experiment):

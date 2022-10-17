@@ -4,17 +4,14 @@
     
 """
 
-from cProfile import label
-from distutils.command.config import config
 import os
 import time
-import numpy as np
 
 BASE_DIR_VIEW = os.path.dirname(os.path.abspath(__file__))
 
 from PyQt5 import uic, QtGui
 from PyQt5.QtCore import QTimer, pyqtSignal, pyqtSlot, QDir, Qt
-from PyQt5.QtWidgets import QMainWindow, QStatusBar, QWidget, QFileDialog, QMenu, QLabel, QSizePolicy, QApplication, QMessageBox
+from PyQt5.QtWidgets import QMainWindow, QWidget, QFileDialog, QLabel, QSizePolicy, QMessageBox
 
 from experimentor import Q_
 from experimentor.lib.log import get_logger
@@ -31,16 +28,15 @@ class SequentialMainWindow(QMainWindow, BaseView):
 
     def __init__(self, experiment=None):
         super(SequentialMainWindow, self).__init__()
-        
-        fontId = QtGui.QFontDatabase.addApplicationFont(os.path.join(BASE_DIR_VIEW, 'Roboto-Regular.ttf'))
-        families = QtGui.QFontDatabase.applicationFontFamilies(fontId)
-        font = QtGui.QFont(families[0])
-        QApplication.instance().setFont(font)
+
+        # fontId = QtGui.QFontDatabase.addApplicationFont(os.path.join(BASE_DIR_VIEW, 'Roboto-Regular.ttf'))
+        # families = QtGui.QFontDatabase.applicationFontFamilies(fontId)
+        # font = QtGui.QFont(families[0])
+        # QApplication.instance().setFont(font)
         #if hasattr(Qt, 'AA_EnableHighDpiScaling'):
         #    QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
         #if hasattr(Qt, 'AA_UseHighDpiPixmaps'):
         #    QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
-
 
         uic.loadUi(os.path.join(BASE_DIR_VIEW, 'Sequential_Main_Window.ui'), self)
         self.experiment = experiment

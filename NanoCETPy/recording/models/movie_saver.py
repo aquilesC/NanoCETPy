@@ -1,6 +1,5 @@
 import json
 import time
-from json import JSONEncoder
 
 import h5py
 import numpy as np

@@ -5,18 +5,17 @@
     and some LED's.
 """
 from multiprocessing import Event
-
-import pyvisa
-from pyvisa import VisaIOError
 from threading import RLock
 from time import sleep
 
-from dispertech.controller.devices.arduino.arduino import Arduino
+import pyvisa
+from pyvisa import VisaIOError
+
+from NanoCETPy.dispertech.controllers.arduino import Arduino
 from experimentor.lib.log import get_logger
 from experimentor.models import Feature
 from experimentor.models.decorators import make_async_thread
 from experimentor.models.devices.base_device import ModelDevice
-
 
 rm = pyvisa.ResourceManager('@py')
 

@@ -1,17 +1,13 @@
 """
     Modified Basler model to acommodate peculiarities of NanoCET operation
 """
-import logging
 
-from pypylon import pylon, _genicam
-
-from experimentor.models.devices.cameras.basler.basler import BaslerCamera
-from experimentor.models.devices.cameras.exceptions import CameraNotFound
+from pypylon import pylon
 
 from experimentor.lib.log import get_logger
-from experimentor.models.action import Action
 from experimentor.models import Feature
-
+from experimentor.models.devices.cameras.basler.basler import BaslerCamera
+from experimentor.models.devices.cameras.exceptions import CameraNotFound
 
 
 class BaslerNanoCET(BaslerCamera):

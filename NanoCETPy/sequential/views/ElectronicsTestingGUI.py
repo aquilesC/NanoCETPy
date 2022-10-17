@@ -1,8 +1,11 @@
 import sys
-from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtWidgets import (QApplication, QGridLayout, QHBoxLayout, QGroupBox, QSpinBox,
-                             QPushButton, QWidget, QSlider)
 import time
+
+import pyqtgraph as pg
+from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtGui import QFont
+from PyQt5.QtWidgets import (QApplication, QGridLayout, QGroupBox, QPushButton, QSlider, QSpinBox, QWidget)
+from pyqtgraph import GraphicsLayoutWidget
 
 
 # class LedSlider(QSlider):
@@ -16,10 +19,6 @@ import time
 #
 #     def send_command(self, value):
 #         self.arduino.
-
-from PyQt5.QtGui import QFont
-import pyqtgraph as pg
-from pyqtgraph import GraphicsLayoutWidget
 
 
 class call_back:

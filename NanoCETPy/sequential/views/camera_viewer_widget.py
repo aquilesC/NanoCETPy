@@ -6,10 +6,8 @@ Wrapper around PyQtGraph ImageView.
 """
 import numpy as np
 import pyqtgraph as pg
-
-from PyQt5.QtCore import pyqtSignal, QTimer
-from PyQt5.QtCore import Qt, QRect
-from PyQt5.QtWidgets import QApplication, QWidget, QHBoxLayout, QAction, QVBoxLayout, QPushButton
+from PyQt5.QtCore import pyqtSignal, QRect, Qt, QTimer
+from PyQt5.QtWidgets import QAction, QApplication
 from pyqtgraph import GraphicsLayoutWidget
 
 from experimentor.lib.log import get_logger

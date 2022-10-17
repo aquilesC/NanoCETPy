@@ -1,11 +1,9 @@
 #//
 #// Wrapping the Lumenera API into a camera-centric class.
 #//
-import ctypes as C 
-from .api import *
-import time
-import os
 import platform
+
+from .api import *
 
 __version__ = "1.0.1"
 
