@@ -1,0 +1,84 @@
+%YAML 1.2
+---
+# Default parameters for the Measurement software program
+# All parameters can be changed to accommodate user needs.
+# All parameters can be changed at runtime with the appropriate config window - not implemented yet
+
+info:
+  user: User
+  files:
+    folder: "%HOMEPATH%/NanoCET"
+    filename: "Waterfall_{description}_{i}.h5"
+    description: Test
+    max_memory: 2500 # In megabytes
+
+GUI:
+  length_waterfall: 492 # Total length of the Waterfall (lines)
+  refresh_time: 50 # Refresh rate of the GUI (in ms)
+
+electronics:
+  arduino:
+    port: null  #'ASRL4::INSTR'
+    baud_rate: 115200
+  vertical_axis: 2
+  horizontal_axis: 1
+  focus_axis: 3
+  led_side: 0
+  led_top: 1
+  led_fiber: 2
+  led_power: 3
+  led_processing: 4
+  led_initialising: 5
+  led_ready: 6
+  laser:
+    power: 0
+
+camera_fiber:
+  model: basler # Should be a python file in model/cameras
+  init: daA1280 # Initial arguments to pass when creating the camera
+  #extra_args: [extra, arguments] # Extra arguments that can be passed when constructing the model
+  model_camera: Dart # To keep a registry of which camera was used in the experiment
+  config:
+    exposure: 100ms # Initial exposure time (in ms)
+    gain: 14.
+    auto_exposure: Off
+    auto_gain: Off
+    pixel_format: Mono8
+    binning: [1, 1] # Binning
+    ROI: [[1, 1280], [1, 960]]
+    buffer_size: 200MB  # Buffer size to allocate memory in the ring-buffer of Basler
+
+camera_microscope:
+  model: basler # Should be a python file in model/cameras
+  init: a2A1920 #  acA1920 Initial arguments to pass when creating the camera
+  #extra_args: [extra, arguments] # Extra arguments that can be passed when constructing the model
+  model_camera: ACE # To keep a registry of which camera was used in the experiment
+  config:
+    exposure: 50ms # Initial exposure time (in ms)
+    gain: 0.
+    ROI: [[8, 1928], [0, 1200]]
+    pixel_format: Mono12
+    auto_exposure: Off
+    auto_gain: Off
+    buffer_size: 2000MB
+
+defaults:
+  devices_loading_timeout: 15s
+  fiber_center: # fiber core on camera_fiber
+  microscope_center: # fiber core on camera_microscope (a line)
+  core_width: 30 # width of crop around fiber core on camera_microscope
+  laser_focusing:
+    high:
+      exposure: 20ms # originally 100ms
+      gain: 10.
+    low:
+      exposure: 10us
+      gain: 0.
+  microscope_focusing:
+    high:
+      exposure: 50ms
+      gain: 10. # originally 40.
+    low:
+      exposure: 50ms # originally 50ms
+      gain: 0.
+  alignment: 
