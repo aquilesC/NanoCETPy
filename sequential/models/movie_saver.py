@@ -106,7 +106,7 @@ class MovieSaver(ExperimentorProcess):
 class WaterfallSaver(ExperimentorProcess):
     """ Modified version of the MovieSaver that processes the each movieframe into a waterfall slice
     """
-    def __init__(self, file, max_memory, frame_rate, saving_event, url, topic='', alignment_images={}, metadata=None):
+    def __init__(self, file, max_memory, frame_rate, saving_event, url, topic='', alignment_images={}, metadata=None, versions={}):
         super().__init__()
         self.file = file
         self.max_memory = max_memory
@@ -115,6 +115,7 @@ class WaterfallSaver(ExperimentorProcess):
         self.topic = topic
         self.url = url
         self.stop_keyword = "MovieSaverStop"
+        self.versions = versions
         if metadata is None:
             metadata = {}
         for key, value in metadata.items():
@@ -132,6 +133,7 @@ class WaterfallSaver(ExperimentorProcess):
         socket.setsockopt(zmq.SUBSCRIBE, self.topic.encode('utf-8'))
 
         with h5py.File(self.file, "a") as f:
+            f.attrs.update(self.versions)
             g = f.create_group('data')
             i = 0
             j = 0
@@ -169,7 +171,7 @@ class WaterfallSaver(ExperimentorProcess):
                     meta = {
                         'fps': self.frame_rate,
                         'start': time.time(),
-                        'allocate': allocate,
+                        'allocate': allocate
                     }
                     meta.update(self.metadata)
                     metadata = json.dumps(meta)
