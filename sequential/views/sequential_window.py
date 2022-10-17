@@ -27,6 +27,7 @@ logger = get_logger(__name__)
 class SequentialMainWindow(QMainWindow, BaseView):
     '''Main Window of the Application with current UI being displayed on the main_widget.
     Listens to signals from this widget to change views'''
+    init_failed = pyqtSignal()
 
     def __init__(self, experiment=None):
         super(SequentialMainWindow, self).__init__()
@@ -43,6 +44,7 @@ class SequentialMainWindow(QMainWindow, BaseView):
 
         uic.loadUi(os.path.join(BASE_DIR_VIEW, 'Sequential_Main_Window.ui'), self)
         self.experiment = experiment
+        self.experiment.parent = self  # Setting the SequentialMainWindow as the parent of experiment class
         self.setWindowIcon(QtGui.QIcon(os.path.join(BASE_DIR_VIEW, 'dispertech-logo.png')))
         
         self.sequence = ['\u2460 Startup\n', '\u2461 Place \ncartridge', '\u2462 Focus and \nAlign', '\u2463 Set up \nexperiment', '\u2464 Measure-\nment\n']
@@ -55,6 +57,7 @@ class SequentialMainWindow(QMainWindow, BaseView):
              }
         self.left_frame.layout().addStretch()
         self.right_frame.layout().addStretch()
+        self.init_failed.connect(self.initializing_failed)
         self.startup_w()
     
     def startup_w(self):
@@ -75,6 +78,7 @@ class SequentialMainWindow(QMainWindow, BaseView):
         preferences_widget.focus_signal.connect(self.focus_w)
         self.set_sequence_display(1)
         self.setWindowTitle('NanoCET - Place cartridge')
+        self.experiment.electronics.state('place_cartridge')
     
     @pyqtSlot()
     def focus_w(self):
@@ -87,6 +91,7 @@ class SequentialMainWindow(QMainWindow, BaseView):
         focus_widget.status_signal.connect(self.set_status)
         self.set_sequence_display(2)
         self.setWindowTitle('NanoCET - Focus and Align')
+        self.experiment.electronics.state('align')
 
     @pyqtSlot()
     def parameters_w(self):
@@ -98,6 +103,7 @@ class SequentialMainWindow(QMainWindow, BaseView):
         parameters_widget.start_signal.connect(self.measurement_w)
         self.set_sequence_display(3)
         self.setWindowTitle('NanoCET - Set up experiment')
+        self.experiment.electronics.state('place_sample')
     
     @pyqtSlot()
     def measurement_w(self):
@@ -110,9 +116,11 @@ class SequentialMainWindow(QMainWindow, BaseView):
         measurement_widget.parameters_signal.connect(self.parameters_w)
         self.set_sequence_display(4)
         self.setWindowTitle('NanoCET - Measurement')
+        self.experiment.electronics.state('measuring')
 
     @pyqtSlot()
     def close_w(self):
+        self.experiment.electronics.state('standby')
         self.clear_main_widget()
         title = QLabel('Closing', objectName='title')
         self.main_widget.layout().addWidget(title)
@@ -151,6 +159,17 @@ class SequentialMainWindow(QMainWindow, BaseView):
         for i in reversed(range(self.main_widget.layout().count())):
             widget = self.main_widget.layout().itemAt(i).widget()
             if widget: widget.deleteLater()
+
+    @pyqtSlot()
+    def initializing_failed(self):
+        msgBox = QMessageBox(parent=self)
+        # msgBox.setIcon(QMessageBox.Close)
+        msgBox.setText("Could not detect all devices.\nCheck usb connection or drivers.")
+        msgBox.setWindowTitle("Initializing failed")
+        msgBox.setStandardButtons(QMessageBox.Close)
+        button = msgBox.exec()
+        if button == QMessageBox.Close:
+            self.close()
 
     def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
         if self.experiment.saving:
@@ -295,6 +314,9 @@ class FocusWidget(QWidget, BaseView):
             self.resized = True
 
     def set_ROI(self):
+        # Make sure to re-initialize the window (when moving through the software "non-linearly")
+        if self.experiment.camera_microscope.ROI != self.experiment.config['camera_microscope']['config']['ROI']:
+            self.experiment.focus_start()
         try:
             self.microscope_viewer.roi_box
             logger.info('Already displaying ROI box')
@@ -314,15 +336,29 @@ class FocusWidget(QWidget, BaseView):
         self.status_signal.emit('Aligning laser to fiber center...')
         pos = self.microscope_viewer.roi_box.pos()
         size = self.microscope_viewer.roi_box.size()
+        print('ROI box pos and size:', pos, size)
         self.experiment.focus_stop()
         time.sleep(1)
         current_roi = self.experiment.camera_microscope.ROI
-        self.experiment.camera_microscope.ROI = (current_roi[0],(pos[1], size[1]))
+        self.experiment.camera_microscope.ROI = (current_roi[0],(pos[1], size[1]))  # This assumes 2nd parameter is "length" and NOT endpoint
         self.experiment.start_alignment()
         self.check_timer = QTimer()
         self.check_timer.timeout.connect(self.check_alignment)
         self.check_timer.start(500)
         logger.info('Timer started')
+        self.align_button.setText('Abort alignment')
+        self.align_button.style().unpolish(self.align_button)  # ??
+        self.align_button.style().polish(self.align_button)    # ??
+        self.align_button.clicked.connect(self.abort_alignment)
+
+    def abort_alignment(self):
+        self.experiment.aligned = False  # check this ???
+        self.check_timer.stop()
+        self.align_button.setText('Align')
+        self.align_button.style().unpolish(self.align_button)  # ??
+        self.align_button.style().polish(self.align_button)  # ??
+        self.align_button.clicked.connect(self.start_alignment)
+
 
     def check_alignment(self):
         logger.info('Check alignment')
@@ -411,9 +447,12 @@ class MeasurementWidget(QWidget, BaseView):
         self.experiment = experiment
 
         self.microscope_viewer = CameraViewerWidget(parent=self)
+        self.microscope_viewer.imv.ui.histogram.hide()
         self.microscope_widget.layout().addWidget(self.microscope_viewer)
         self.microscope_viewer.imv.setPredefinedGradient('thermal')
+
         self.waterfall_viewer = CameraViewerWidget(parent=self)
+        self.waterfall_viewer.imv.ui.histogram.hide()
         self.waterfall_widget.layout().addWidget(self.waterfall_viewer)
         self.waterfall_viewer.imv.setPredefinedGradient('thermal')
         self.microscope_timer = QTimer()
@@ -421,6 +460,7 @@ class MeasurementWidget(QWidget, BaseView):
         self.waterfall_timer = QTimer()
         self.waterfall_timer.timeout.connect(self.update_waterfall_viewer)
 
+        # self.experiment.reset_waterfall()
         self.stop_button.clicked.connect(self.stop_measurement)
         self.resume_button.clicked.connect(self.resume_measurement)
         self.change_button.clicked.connect(self.parameters)
@@ -436,19 +476,28 @@ class MeasurementWidget(QWidget, BaseView):
         self.waterfall_timer.start(50)
 
     def update_helptext_label(self):
+        """
+        TODO: The naming in the GUI needs to change (because it shows incorrect file), but this should be part of a whole update of saving procedure.
+        """
         try:
-            files = [x for x in os.listdir(self.experiment.prepare_folder()) if x.endswith(".h5")]
-            newest = max(files , key = os.path.getctime)
-        except:
+            data_folder = self.experiment.prepare_folder()
+            files = [x for x in os.listdir(data_folder) if x.endswith(".h5")]
+            newest = max(files, key=lambda fname: os.path.getctime(os.path.join(data_folder, fname)))
+        except Exception as e:
             newest = "Test_Experiment_001.hf"
         if self.experiment.active:
+            new_filename = self.experiment.get_filename("")
+            filename_split = new_filename.split(os.path.sep)
             self.helptext_label.setText(
                 f"Measurement ongoing"
-                f"\n\nData being saved to {newest}"
+                f"\n\nData being saved to:\n"
+                f"{os.path.sep.join(filename_split[:-1])}{os.path.sep}"
+                f"\n{filename_split[-1]}"
                 f"\n\nLaser power:\t{self.experiment.electronics.scattering_laser}"
                 f"\nExposure time:\t{self.experiment.camera_microscope.config['exposure']}"
                 f"\nGain:\t{self.experiment.camera_microscope.config['gain']}")
         else:
+
             self.helptext_label.setText(
                 f"Measurement finished"
                 f"\n\nData was saved to {newest}"
@@ -459,14 +508,22 @@ class MeasurementWidget(QWidget, BaseView):
     def update_microscope_viewer(self):
         img = self.experiment.get_latest_image()
         self.microscope_viewer.update_image(img)
-        if not self.resized: 
+        self.microscope_viewer.view.autoRange()
+        if not self.resized:
             self.resize(self.width()+1, self.height()+1)
+            # self.waterfall_viewer.view.autoRange()
             self.resized = True
+            self.logger.info('resizing to force redraw')
+
 
     def update_waterfall_viewer(self):
         img = self.experiment.get_waterfall_image()
+
         self.waterfall_viewer.update_image(img)
-    
+        self.waterfall_viewer.view.autoRange()
+        # self.waterfall_viewer.do_auto_range(ignore_zeros=True)
+        self.waterfall_viewer.imv.setLevels(*self.experiment.waterfall_image_limits)
+
     def stop_measurement(self):
         if not self.experiment.saving: return
         self.experiment.active = False
@@ -484,14 +541,17 @@ class MeasurementWidget(QWidget, BaseView):
         self.quit_button.setFlat(False)
         self.quit_button.style().unpolish(self.quit_button)
         self.quit_button.style().polish(self.quit_button)
+        self.experiment.electronics.state('paused')
 
     def parameters(self):
         if self.experiment.saving: return
         self.experiment.active = True
         self.parameters_signal.emit()
+        self.experiment.electronics.state('parameters')
 
     def resume_measurement(self):
-        if self.experiment.saving: return
+        if self.experiment.saving:
+            return
         self.experiment.active = True
         self.update_helptext_label()
         self.experiment.save_waterfall()
@@ -507,6 +567,7 @@ class MeasurementWidget(QWidget, BaseView):
         self.quit_button.setFlat(True)
         self.quit_button.style().unpolish(self.quit_button)
         self.quit_button.style().polish(self.quit_button)
+        self.experiment.electronics.state('measuring')
 
     def quit(self):
         if self.experiment.saving: return
@@ -532,6 +593,7 @@ class CloseWidget(QWidget, BaseView):
         self.new_button.clicked.connect(self.preferences)
 
     def preferences(self):
+        self.experiment.electronics.state('place_cartridge')
         self.experiment.aligned = False
         self.preferences_signal.emit()
 

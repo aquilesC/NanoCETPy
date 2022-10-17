@@ -48,7 +48,7 @@ class CameraViewerWidget(DataViewWidget):
         self.img = pg.ImageItem()
         self.view.addItem(self.img)
         self.imv = pg.ImageView(view=self.view, imageItem=self.img)
-        
+
         self.imv.ui.roiBtn.hide()
         self.imv.ui.menuBtn.hide()
         #self.imv.show()
@@ -71,7 +71,7 @@ class CameraViewerWidget(DataViewWidget):
 
         self.corner_roi = [0, 0]  # Initial ROI corner for the camera
 
-        self.first_image = True
+        self.first_image = 8
 
         self.logger = get_logger()
 
@@ -91,8 +91,9 @@ class CameraViewerWidget(DataViewWidget):
         self.logger.debug(f'Updating image with auto_levels: {auto_levels}')
         if image is not None:
             self.imv.setImage(image, autoLevels=auto_levels, autoRange=auto_range, autoHistogramRange=auto_histogram_range)
-            #self.img.setImage(image)
+            # self.img.setImage(image, autoHisogramRange=True)
             #self.view.setRange(yRange=(0,image.shape[1]), padding=0)
+            # self.imv.autoLevels()
             if self.first_image:
 
                 self.do_auto_range()
@@ -104,7 +105,7 @@ class CameraViewerWidget(DataViewWidget):
                 #                    minYRange=0.1*image.shape[1], maxYRange=4*image.shape[1])
                 #self.view.setRange(yRange=(0,image.shape[1]), padding=0)
                 self.view.autoRange(padding=0)
-                self.first_image = False
+                self.first_image -= 1
             self.last_image = image
         else:
             self.logger.debug(f'No new image to update')
@@ -211,13 +212,15 @@ class CameraViewerWidget(DataViewWidget):
                 self.show_cross_cut = True
                 self.crossCut.setValue(int(self.img.mapFromScene(arg).y()))
 
-    def do_auto_range(self):
+    def do_auto_range(self, ignore_zeros=False):
         """ Sets the levels of the image based on the maximum and minimum. This is useful when auto-levels are off
         (the default behavior), and one needs to quickly adapt the histogram.
         """
 
         h, y = self.img.getHistogram()
-        self.imv.setLevels(min(h),max(h))
+        if ignore_zeros:
+            h = h[h > 0]
+        self.imv.setLevels(min(h), max(h))
 
     def draw_target_pointer(self, locations):
         """gets an image and draws a circle around the target locations.
