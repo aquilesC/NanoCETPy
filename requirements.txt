@@ -1,0 +1,14 @@
+﻿setuptools~=63.4.1
+numpy~=1.23.1
+pyqtgraph~=0.12.3
+scipy~=1.9.1
+yaml~=0.2.5
+pyyaml~=6.0
+experimentor~=0.4.0
+scikit-image~=0.19.2
+h5py~=3.7.0
+pyzmq~=23.2.0
+pypylon~=1.8.0
+pyvisa~=1.12.0
+pyserial~=3.5
+pyqt5~=5.15.7
