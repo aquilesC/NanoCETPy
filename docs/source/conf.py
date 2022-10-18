@@ -5,14 +5,15 @@
 
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../../'))
+
+sys.path.insert(0, os.path.abspath('../../NanoCETPy'))
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'NanoCETPy'
-copyright = '2022, Jakob'
-author = 'Jakob'
+copyright = 'Dispertech © 2022'
+author = 'Dispertech Authors. See AUTHORS for more information'
 release = '0.1'
 
 # -- General configuration ---------------------------------------------------
@@ -27,9 +28,6 @@ autosummary_generate = True
 
 templates_path = ['_templates']
 exclude_patterns = ['_build', '_templates']
-#exclude_patterns = []
-
-
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
