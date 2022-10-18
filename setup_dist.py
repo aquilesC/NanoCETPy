@@ -1,12 +1,16 @@
 ﻿# -*- coding: utf-8 -*-
 import sys
 from cx_Freeze import setup, Executable
-from setuptools import setup, find_packages
+from setuptools import find_packages
 
-with open('NanoCETPy/__init__.py', 'r') as f:
-    version_line = f.readline()
+with open('NanoCETPy/_version.py', 'r', encoding='utf-8-sig') as f:
+    while True:
+        version_line = f.readline()
+        print(version_line)
+        if version_line.startswith('__version__'):
+            break
 
-version = version_line.split('=')[1].strip().replace("'", "")
+    version = version_line.split('=')[1].strip().replace("'", "")
 
 with open('README.md', 'r') as f:
     long_description = f.read()
@@ -49,5 +53,8 @@ setup(
     'pyvisa',
     'pyserial',
     'pyqt5',
+        ],
+    executables=[
+        Executable("NanoCETPy/start_sequential.py"),
         ],
 )
