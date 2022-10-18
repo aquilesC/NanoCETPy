@@ -3,11 +3,8 @@
 
     
 """
-
 import os
 import time
-
-BASE_DIR_VIEW = os.path.dirname(os.path.abspath(__file__))
 
 from PyQt5 import uic, QtGui
 from PyQt5.QtCore import QTimer, pyqtSignal, pyqtSlot, QDir, Qt
@@ -17,6 +14,7 @@ from experimentor import Q_
 from experimentor.lib.log import get_logger
 from experimentor.views.base_view import BaseView
 from .camera_viewer_widget import CameraViewerWidget
+from ..views import BASE_DIR_VIEW
 
 logger = get_logger(__name__)
 
@@ -29,19 +27,10 @@ class SequentialMainWindow(QMainWindow, BaseView):
     def __init__(self, experiment=None):
         super(SequentialMainWindow, self).__init__()
 
-        # fontId = QtGui.QFontDatabase.addApplicationFont(os.path.join(BASE_DIR_VIEW, 'Roboto-Regular.ttf'))
-        # families = QtGui.QFontDatabase.applicationFontFamilies(fontId)
-        # font = QtGui.QFont(families[0])
-        # QApplication.instance().setFont(font)
-        #if hasattr(Qt, 'AA_EnableHighDpiScaling'):
-        #    QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
-        #if hasattr(Qt, 'AA_UseHighDpiPixmaps'):
-        #    QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
-
-        uic.loadUi(os.path.join(BASE_DIR_VIEW, 'Sequential_Main_Window.ui'), self)
+        uic.loadUi(BASE_DIR_VIEW / 'GUI' / 'Sequential_Main_Window.ui', self)
         self.experiment = experiment
         self.experiment.parent = self  # Setting the SequentialMainWindow as the parent of experiment class
-        self.setWindowIcon(QtGui.QIcon(os.path.join(BASE_DIR_VIEW, 'dispertech-logo.png')))
+        self.setWindowIcon(QtGui.QIcon(str(BASE_DIR_VIEW / 'GUI/dispertech-logo.png')))
         
         self.sequence = ['\u2460 Startup\n', '\u2461 Place \ncartridge', '\u2462 Focus and \nAlign', '\u2463 Set up \nexperiment', '\u2464 Measure-\nment\n']
         self.label_redirect_dict = {
@@ -211,7 +200,7 @@ class StartupWidget(QWidget, BaseView):
 
     def __init__(self, experiment, parent=None):
         super(StartupWidget, self).__init__(parent=parent)
-        uic.loadUi(os.path.join(BASE_DIR_VIEW, 'Startup_Widget.ui'), self)
+        uic.loadUi(BASE_DIR_VIEW / 'GUI' / 'Startup_Widget.ui', self)
         self.experiment = experiment
 
         self.intialized = [False, False, False]
@@ -240,11 +229,11 @@ class PreferencesWidget(QWidget, BaseView):
 
     def __init__(self, experiment, parent=None):
         super(PreferencesWidget, self).__init__(parent=parent)
-        uic.loadUi(os.path.join(BASE_DIR_VIEW, 'Preferences_Widget.ui'), self)
+        uic.loadUi(BASE_DIR_VIEW / 'GUI' / 'Preferences_Widget.ui', self)
         self.experiment = experiment
         self.config = self.experiment.config['info'] # Does this work?
 
-        instructive_gif = QtGui.QMovie(os.path.join(BASE_DIR_VIEW, 'insert_cartridge.gif')) 
+        instructive_gif = QtGui.QMovie(str(BASE_DIR_VIEW / 'GUI/insert_cartridge.gif'))
         self.picture_label.setMovie(instructive_gif)
         instructive_gif.start()
         self.helptext_label.setWordWrap(True)
@@ -284,7 +273,7 @@ class FocusWidget(QWidget, BaseView):
 
     def __init__(self, experiment, parent=None):
         super(FocusWidget, self).__init__(parent=parent)
-        uic.loadUi(os.path.join(BASE_DIR_VIEW, 'Focus_Widget.ui'), self)
+        uic.loadUi(BASE_DIR_VIEW / 'GUI' / 'Focus_Widget.ui', self)
         self.experiment = experiment
 
         self.microscope_viewer = CameraViewerWidget(parent=self)
@@ -381,7 +370,7 @@ class ParametersWidget(QWidget, BaseView):
 
     def __init__(self, experiment, parent=None):
         super(ParametersWidget, self).__init__(parent=parent)
-        uic.loadUi(os.path.join(BASE_DIR_VIEW, 'Parameters_Widget.ui'), self)
+        uic.loadUi(BASE_DIR_VIEW / 'GUI/Parameters_Widget.ui', self)
         self.experiment = experiment
 
         self.microscope_viewer = CameraViewerWidget(parent=self)
@@ -439,7 +428,7 @@ class MeasurementWidget(QWidget, BaseView):
 
     def __init__(self, experiment, parent=None):
         super(MeasurementWidget, self).__init__(parent=parent)
-        uic.loadUi(os.path.join(BASE_DIR_VIEW, 'Measurement_Widget.ui'), self)
+        uic.loadUi(BASE_DIR_VIEW / 'GUI/Measurement_Widget.ui', self)
         self.experiment = experiment
 
         self.microscope_viewer = CameraViewerWidget(parent=self)
@@ -578,10 +567,10 @@ class CloseWidget(QWidget, BaseView):
 
     def __init__(self, experiment, parent=None):
         super(CloseWidget, self).__init__(parent=parent)
-        uic.loadUi(os.path.join(BASE_DIR_VIEW, 'Close_Widget.ui'), self)
+        uic.loadUi(BASE_DIR_VIEW / 'GUI/Close_Widget.ui', self)
         self.experiment = experiment
 
-        instructive_gif = QtGui.QMovie(os.path.join(BASE_DIR_VIEW, 'remove_cartridge.gif')) 
+        instructive_gif = QtGui.QMovie(str(BASE_DIR_VIEW / 'GUI/remove_cartridge.gif'))
         self.picture_label.setMovie(instructive_gif)
         instructive_gif.start()
 
@@ -603,7 +592,7 @@ class XWidget(QWidget, BaseView):
 
     def __init__(self, experiment, parent=None):
         super(XWidget, self).__init__(parent=parent)
-        uic.loadUi(os.path.join(BASE_DIR_VIEW, 'X_Widget.ui'), self)
+        uic.loadUi(BASE_DIR_VIEW / 'GUI' / 'X_Widget.ui', self)
         self.experiment = experiment
 
     def x_function(self):

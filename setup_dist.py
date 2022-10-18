@@ -1,12 +1,12 @@
-# -*- coding: utf-8 -*-
-
+﻿# -*- coding: utf-8 -*-
+import sys
+from cx_Freeze import setup, Executable
 from setuptools import setup, find_packages
 
 with open('NanoCETPy/__init__.py', 'r') as f:
-    while not (version_line := f.readline()).startswith('version'):
-        continue
+    version_line = f.readline()
 
-    version = version_line.split('=')[1].strip().replace("'", "")
+version = version_line.split('=')[1].strip().replace("'", "")
 
 with open('README.md', 'r') as f:
     long_description = f.read()
@@ -28,12 +28,7 @@ setup(
     ],
     include_package_data=True,
     package_data={'NanoCETPy':
-        [
-            'resources/*',
-            'sequential/views/**/*.ui',
-            'sequential/views/**/*.gif',
-            'sequential/views/**/*.png',
-         ]},
+        ['resources/*',]},
     long_description=long_description,
     long_description_content_type="text/markdown",
     entry_points={
@@ -52,8 +47,7 @@ setup(
     'pyzmq',
     'pypylon',
     'pyvisa',
-    'pyvisa-py',
     'pyserial',
     'pyqt5',
-    ],
+        ],
 )
