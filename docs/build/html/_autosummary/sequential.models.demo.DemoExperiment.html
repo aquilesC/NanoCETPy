@@ -15,6 +15,7 @@
     <script src="../_static/underscore.js"></script>
     <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
     
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -61,6 +62,20 @@
 <dd><p>Needs to be overridden by child classes.</p>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="sequential.models.demo.DemoExperiment.load_configuration">
+<span class="sig-name descname"><span class="pre">load_configuration</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#sequential.models.demo.DemoExperiment.load_configuration" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads the configuration file in YAML format.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>filename</strong> (<em>str</em>) – full path to where the configuration file is located.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>FileNotFoundError</strong> – if the file does not exist.</p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 </section>
@@ -72,6 +87,20 @@
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">sequential.models.demo.DemoExperiment</a><ul>
+<li><a class="reference internal" href="#sequential.models.demo.DemoExperiment"><code class="docutils literal notranslate"><span class="pre">DemoExperiment</span></code></a><ul>
+<li><a class="reference internal" href="#sequential.models.demo.DemoExperiment.finalize"><code class="docutils literal notranslate"><span class="pre">DemoExperiment.finalize()</span></code></a></li>
+<li><a class="reference internal" href="#sequential.models.demo.DemoExperiment.load_configuration"><code class="docutils literal notranslate"><span class="pre">DemoExperiment.load_configuration()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  </div>
   <div>
     <h4>Previous topic</h4>
     <p class="topless"><a href="sequential.models.demo.DemoElectronics.html"
@@ -126,8 +155,8 @@
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2022, Jakob.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.1.1.
+        &#169; Copyright Dispertech © 2022.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.3.0.
     </div>
   </body>
 </html>

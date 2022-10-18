@@ -15,6 +15,7 @@
     <script src="../_static/underscore.js"></script>
     <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
     
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -58,6 +59,14 @@
 <p>while the <code class="xref py py-meth docutils literal notranslate"><span class="pre">initialize()</span></code> of the <code class="xref py py-class docutils literal notranslate"><span class="pre">MainSetup()</span></code> runs in a loop 
 triggering the device initialization methods, this <a class="reference internal" href="#sequential.models.basler.BaslerNanoCET.initialize" title="sequential.models.basler.BaslerNanoCET.initialize"><code class="xref py py-meth docutils literal notranslate"><span class="pre">initialize()</span></code></a> only completes if a device is found,
 otherwise it raises an error.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sequential.models.basler.BaslerNanoCET.ROI">
+<span class="sig-name descname"><span class="pre">ROI</span></span><a class="headerlink" href="#sequential.models.basler.BaslerNanoCET.ROI" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve the Region of interest, following the Basler convention:
+((horizontal_offset, width), (vertical_offset, height))
+Note that indexing starts at 0</p>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="sequential.models.basler.BaslerNanoCET.clear_ROI">
 <span class="sig-name descname"><span class="pre">clear_ROI</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#sequential.models.basler.BaslerNanoCET.clear_ROI" title="Permalink to this definition">¶</a></dt>
@@ -93,6 +102,21 @@ parameters as attributes in the class) or statement based (i.e. passing paramete
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">sequential.models.basler.BaslerNanoCET</a><ul>
+<li><a class="reference internal" href="#sequential.models.basler.BaslerNanoCET"><code class="docutils literal notranslate"><span class="pre">BaslerNanoCET</span></code></a><ul>
+<li><a class="reference internal" href="#sequential.models.basler.BaslerNanoCET.ROI"><code class="docutils literal notranslate"><span class="pre">BaslerNanoCET.ROI</span></code></a></li>
+<li><a class="reference internal" href="#sequential.models.basler.BaslerNanoCET.clear_ROI"><code class="docutils literal notranslate"><span class="pre">BaslerNanoCET.clear_ROI()</span></code></a></li>
+<li><a class="reference internal" href="#sequential.models.basler.BaslerNanoCET.initialize"><code class="docutils literal notranslate"><span class="pre">BaslerNanoCET.initialize()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  </div>
   <div>
     <h4>Previous topic</h4>
     <p class="topless"><a href="sequential.models.basler.html"
@@ -147,8 +171,8 @@ parameters as attributes in the class) or statement based (i.e. passing paramete
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2022, Jakob.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.1.1.
+        &#169; Copyright Dispertech © 2022.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.3.0.
     </div>
   </body>
 </html>

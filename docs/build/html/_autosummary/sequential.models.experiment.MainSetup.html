@@ -15,6 +15,7 @@
     <script src="../_static/underscore.js"></script>
     <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
     
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -77,7 +78,7 @@
 <dd><p>Aligns the focussed laser beam to the previously detected center of the fiber.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>fiber_center</strong> (<em>array</em><em> or </em><em>tuple of shape</em><em> (</em><em>2</em><em>,</em><em>)</em>) – coordinates of the center of the fiber</p>
+<dd class="field-odd"><p><strong>fiber_center</strong> (<em>array</em><em> or </em><em>tuple</em><em> of </em><em>shape</em><em> (</em><em>2</em><em>,</em><em>)</em>) – coordinates of the center of the fiber</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>None</p>
@@ -92,18 +93,9 @@
 <dl class="py method">
 <dt class="sig sig-object py" id="sequential.models.experiment.MainSetup.align_laser_fine">
 <span class="sig-name descname"><span class="pre">align_laser_fine</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#sequential.models.experiment.MainSetup.align_laser_fine" title="Permalink to this definition">¶</a></dt>
-<dd><p>Maximises the fiber core scattering signal seen on the microscope cam by computing the median along axis 0.
-Idea: Median along axis 0 is highest for the position of fiber center even with bright dots from impurities in the image
-Procedure: Move until np.max(median)/np.min(median) gets smaller then change direction</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>None</p>
-</dd>
-</dl>
-<div class="admonition-todo admonition" id="id2">
-<p class="admonition-title">Todo</p>
-<p>Test how robustly this detects the fiber core and not anything else</p>
-</div>
+<dd><p>Iterate both axes multiple times, always finishing piezo motion in positive direction.
+Because the piezo steps are very large, don’t use a drop in intensity as the moment to stop, but the expected
+maximum encountered on a previous sweep.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -121,14 +113,22 @@ Procedure: Move until np.max(median)/np.min(median) gets smaller then change dir
 <dl class="py method">
 <dt class="sig sig-object py" id="sequential.models.experiment.MainSetup.find_focus">
 <span class="sig-name descname"><span class="pre">find_focus</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#sequential.models.experiment.MainSetup.find_focus" title="Permalink to this definition">¶</a></dt>
-<dd><p>Finding the focus with turned on laser by minimizing area of laser reflection.
-Idea: Laser beam and thus reflection have gaussian intensity profile. The lower the spread the less pixel values are above a certain arbitrary percentile
-Procedure: Check number of pixels above percentile and compare to previous measurement. If increasing, change direction and reduce speed. Stop at a certain minimum speed.</p>
+<dd><p>The procedure above has some drawbacks/risks.
+The camera will usually saturate, so looking for the brightest spots won’t be reliable.
+Other things to look for could be the smallest saturated spot:
+- The number of saturated pixels is very small
+- The number of black pixels is very high</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>None</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sequential.models.experiment.MainSetup.focus_start">
+<span class="sig-name descname"><span class="pre">focus_start</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#sequential.models.experiment.MainSetup.focus_start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Live view for manual focussing of microscope.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -142,6 +142,20 @@ filename is available.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>full path to the file where to save the data</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sequential.models.experiment.MainSetup.load_configuration">
+<span class="sig-name descname"><span class="pre">load_configuration</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#sequential.models.experiment.MainSetup.load_configuration" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads the configuration file in YAML format.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>filename</strong> (<em>str</em>) – full path to where the configuration file is located.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>FileNotFoundError</strong> – if the file does not exist.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -194,6 +208,31 @@ new_config should be dict with keys exposure_time and gain</p>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">sequential.models.experiment.MainSetup</a><ul>
+<li><a class="reference internal" href="#sequential.models.experiment.MainSetup"><code class="docutils literal notranslate"><span class="pre">MainSetup</span></code></a><ul>
+<li><a class="reference internal" href="#sequential.models.experiment.MainSetup.align_laser_coarse"><code class="docutils literal notranslate"><span class="pre">MainSetup.align_laser_coarse()</span></code></a></li>
+<li><a class="reference internal" href="#sequential.models.experiment.MainSetup.align_laser_fine"><code class="docutils literal notranslate"><span class="pre">MainSetup.align_laser_fine()</span></code></a></li>
+<li><a class="reference internal" href="#sequential.models.experiment.MainSetup.finalize"><code class="docutils literal notranslate"><span class="pre">MainSetup.finalize()</span></code></a></li>
+<li><a class="reference internal" href="#sequential.models.experiment.MainSetup.find_ROI"><code class="docutils literal notranslate"><span class="pre">MainSetup.find_ROI()</span></code></a></li>
+<li><a class="reference internal" href="#sequential.models.experiment.MainSetup.find_focus"><code class="docutils literal notranslate"><span class="pre">MainSetup.find_focus()</span></code></a></li>
+<li><a class="reference internal" href="#sequential.models.experiment.MainSetup.focus_start"><code class="docutils literal notranslate"><span class="pre">MainSetup.focus_start()</span></code></a></li>
+<li><a class="reference internal" href="#sequential.models.experiment.MainSetup.get_filename"><code class="docutils literal notranslate"><span class="pre">MainSetup.get_filename()</span></code></a></li>
+<li><a class="reference internal" href="#sequential.models.experiment.MainSetup.load_configuration"><code class="docutils literal notranslate"><span class="pre">MainSetup.load_configuration()</span></code></a></li>
+<li><a class="reference internal" href="#sequential.models.experiment.MainSetup.prepare_folder"><code class="docutils literal notranslate"><span class="pre">MainSetup.prepare_folder()</span></code></a></li>
+<li><a class="reference internal" href="#sequential.models.experiment.MainSetup.save_waterfall"><code class="docutils literal notranslate"><span class="pre">MainSetup.save_waterfall()</span></code></a></li>
+<li><a class="reference internal" href="#sequential.models.experiment.MainSetup.set_laser_power"><code class="docutils literal notranslate"><span class="pre">MainSetup.set_laser_power()</span></code></a></li>
+<li><a class="reference internal" href="#sequential.models.experiment.MainSetup.start_alignment"><code class="docutils literal notranslate"><span class="pre">MainSetup.start_alignment()</span></code></a></li>
+<li><a class="reference internal" href="#sequential.models.experiment.MainSetup.update_camera"><code class="docutils literal notranslate"><span class="pre">MainSetup.update_camera()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  </div>
   <div>
     <h4>Previous topic</h4>
     <p class="topless"><a href="sequential.models.experiment.html"
@@ -248,8 +287,8 @@ new_config should be dict with keys exposure_time and gain</p>
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2022, Jakob.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.1.1.
+        &#169; Copyright Dispertech © 2022.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.3.0.
     </div>
   </body>
 </html>
