@@ -2,9 +2,12 @@
 
 from setuptools import setup, find_packages
 
-with open('NanoCETPy/__init__.py', 'r') as f:
-    while not (version_line := f.readline()).startswith('version'):
-        continue
+with open('NanoCETPy/_version.py', 'r', encoding='utf-8-sig') as f:
+    while True:
+        version_line = f.readline()
+        print(version_line)
+        if version_line.startswith('__version__'):
+            break
 
     version = version_line.split('=')[1].strip().replace("'", "")
 
