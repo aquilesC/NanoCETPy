@@ -23,16 +23,15 @@
 """
 import os
 import sys
-import pathlib
 
 import yaml
 from PyQt5 import QtGui
 from PyQt5.QtWidgets import QApplication
 
 from experimentor.lib.log import get_logger, log_to_screen
-from .sequential.models.demo import DemoExperiment
-from .sequential.models.experiment import MainSetup
-from .sequential.views.sequential_window import SequentialMainWindow
+from NanoCETPy.sequential.models.demo import DemoExperiment
+from NanoCETPy.sequential.models.experiment import MainSetup
+from NanoCETPy.sequential.views.sequential_window import SequentialMainWindow
 
 from NanoCETPy import BASE_PATH
 
@@ -40,7 +39,7 @@ from NanoCETPy import BASE_PATH
 
 def main():
     logger = get_logger()
-    handler = log_to_screen(logger=logger)
+    log_to_screen(logger=logger)
     if len(sys.argv) > 1 and sys.argv[1] == 'demo':
         experiment = DemoExperiment()
     else:
