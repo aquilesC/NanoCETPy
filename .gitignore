@@ -22,3 +22,4 @@ multiply_array.npy
 test*
 lt29059-sample.py
 config_user.yml
+build/
