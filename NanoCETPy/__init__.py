@@ -1,1 +1,4 @@
-version = '1.0.2a1'
+import pathlib
+
+
+BASE_PATH = pathlib.Path(__file__).parent

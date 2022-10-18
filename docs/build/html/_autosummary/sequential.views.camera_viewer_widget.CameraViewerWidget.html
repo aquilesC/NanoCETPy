@@ -15,6 +15,7 @@
     <script src="../_static/underscore.js"></script>
     <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
     
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -58,10 +59,15 @@
 mouse interactions, such as performing an auto-range through right-clicking, it allows to drag and drop horizontal
 and vertical lines to define a ROI, and it allows to draw on top of the image. The core idea is to make these options
 explicit, in order to systematize them in one place.</p>
+<section id="signals">
+<h2>Signals<a class="headerlink" href="#signals" title="Permalink to this heading">¶</a></h2>
 <dl class="simple">
 <dt>clicked_on_image: Emits [float, float] with the coordinates where the mouse was clicked on the image. Does not</dt><dd><p>distinguish between left/right clicks. Any further processing must be done downstream.</p>
 </dd>
 </dl>
+</section>
+<section id="attributes">
+<h2>Attributes<a class="headerlink" href="#attributes" title="Permalink to this heading">¶</a></h2>
 <p>layout: QHBoxLayout, in case extra elements must be added
 viewport: GraphicsLayoutWidget
 view: ViewBox
@@ -84,7 +90,7 @@ create a timer to automatically update the image</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="sequential.views.camera_viewer_widget.CameraViewerWidget.do_auto_range">
-<span class="sig-name descname"><span class="pre">do_auto_range</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#sequential.views.camera_viewer_widget.CameraViewerWidget.do_auto_range" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">do_auto_range</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ignore_zeros</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#sequential.views.camera_viewer_widget.CameraViewerWidget.do_auto_range" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sets the levels of the image based on the maximum and minimum. This is useful when auto-levels are off
 (the default behavior), and one needs to quickly adapt the histogram.</p>
 </dd></dl>
@@ -163,6 +169,7 @@ These last two events have to be handeled in the mainWindow that implemented thi
 <dd><p>Updates the image being displayed with some sensitive defaults, which can be over written if needed.</p>
 </dd></dl>
 
+</section>
 </dd></dl>
 
 </section>
@@ -174,6 +181,31 @@ These last two events have to be handeled in the mainWindow that implemented thi
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
         <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">sequential.views.camera_viewer_widget.CameraViewerWidget</a><ul>
+<li><a class="reference internal" href="#sequential.views.camera_viewer_widget.CameraViewerWidget"><code class="docutils literal notranslate"><span class="pre">CameraViewerWidget</span></code></a><ul>
+<li><a class="reference internal" href="#sequential.views.camera_viewer_widget.CameraViewerWidget.add_actions_to_menu"><code class="docutils literal notranslate"><span class="pre">CameraViewerWidget.add_actions_to_menu()</span></code></a></li>
+<li><a class="reference internal" href="#sequential.views.camera_viewer_widget.CameraViewerWidget.connect_to_camera"><code class="docutils literal notranslate"><span class="pre">CameraViewerWidget.connect_to_camera()</span></code></a></li>
+<li><a class="reference internal" href="#sequential.views.camera_viewer_widget.CameraViewerWidget.do_auto_range"><code class="docutils literal notranslate"><span class="pre">CameraViewerWidget.do_auto_range()</span></code></a></li>
+<li><a class="reference internal" href="#sequential.views.camera_viewer_widget.CameraViewerWidget.draw_target_pointer"><code class="docutils literal notranslate"><span class="pre">CameraViewerWidget.draw_target_pointer()</span></code></a></li>
+<li><a class="reference internal" href="#sequential.views.camera_viewer_widget.CameraViewerWidget.get_roi_values"><code class="docutils literal notranslate"><span class="pre">CameraViewerWidget.get_roi_values()</span></code></a></li>
+<li><a class="reference internal" href="#sequential.views.camera_viewer_widget.CameraViewerWidget.keyPressEvent"><code class="docutils literal notranslate"><span class="pre">CameraViewerWidget.keyPressEvent()</span></code></a></li>
+<li><a class="reference internal" href="#sequential.views.camera_viewer_widget.CameraViewerWidget.mouseMoved"><code class="docutils literal notranslate"><span class="pre">CameraViewerWidget.mouseMoved()</span></code></a></li>
+<li><a class="reference internal" href="#sequential.views.camera_viewer_widget.CameraViewerWidget.scene"><code class="docutils literal notranslate"><span class="pre">CameraViewerWidget.scene()</span></code></a></li>
+<li><a class="reference internal" href="#sequential.views.camera_viewer_widget.CameraViewerWidget.setup_cross_cut"><code class="docutils literal notranslate"><span class="pre">CameraViewerWidget.setup_cross_cut()</span></code></a></li>
+<li><a class="reference internal" href="#sequential.views.camera_viewer_widget.CameraViewerWidget.setup_cross_hair"><code class="docutils literal notranslate"><span class="pre">CameraViewerWidget.setup_cross_hair()</span></code></a></li>
+<li><a class="reference internal" href="#sequential.views.camera_viewer_widget.CameraViewerWidget.setup_roi_box"><code class="docutils literal notranslate"><span class="pre">CameraViewerWidget.setup_roi_box()</span></code></a></li>
+<li><a class="reference internal" href="#sequential.views.camera_viewer_widget.CameraViewerWidget.setup_roi_lines"><code class="docutils literal notranslate"><span class="pre">CameraViewerWidget.setup_roi_lines()</span></code></a></li>
+<li><a class="reference internal" href="#sequential.views.camera_viewer_widget.CameraViewerWidget.update_image"><code class="docutils literal notranslate"><span class="pre">CameraViewerWidget.update_image()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  </div>
   <div>
     <h4>Previous topic</h4>
     <p class="topless"><a href="sequential.views.camera_viewer_widget.html"
@@ -228,8 +260,8 @@ These last two events have to be handeled in the mainWindow that implemented thi
       </ul>
     </div>
     <div class="footer" role="contentinfo">
-        &#169; Copyright 2022, Jakob.
-      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.1.1.
+        &#169; Copyright Dispertech © 2022.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.3.0.
     </div>
   </body>
 </html>

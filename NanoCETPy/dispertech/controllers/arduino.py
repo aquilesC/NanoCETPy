@@ -21,7 +21,6 @@ logger = get_logger(__name__)
 class Arduino:
     def __init__(self, port=None, baud_rate=19200):
         """
-
         :param port: Serial port where the Arduino is connected, can be none and in order to look for devices
         automatically
         """

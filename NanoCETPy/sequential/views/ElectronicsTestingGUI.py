@@ -36,9 +36,10 @@ class call_back:
         setattr(self.arduino, self.property_name, value)
         # self.property = value
 
+
 class Window(QWidget):
-    def __init__(self, arduino, camera_fiber, show_plot=False):
-        super(Window, self).__init__()
+    def __init__(self, arduino, camera_fiber, show_plot=False, parent=None):
+        super(Window, self).__init__(parent=parent)
         custom_font = QFont()
         custom_font.setPointSize(12)
         self.arduino = arduino
@@ -47,9 +48,6 @@ class Window(QWidget):
 
         # self.camera_fiber.trigger_camera()
         # img = self.camera_fiber.read_camera()[-1]
-
-
-
 
         self.viewport = GraphicsLayoutWidget()
         self.view = self.viewport.addViewBox(lockAspect=False, enableMenu=True)
@@ -264,11 +262,8 @@ class Window(QWidget):
 
 
 if __name__ == '__main__':
-    # Can't do relative import because NanoCETPy is not a package
-    # from ..models.arduino import ArduinoNanoCET
-    sys.path.append('../models')
-    from arduino import ArduinoNanoCET
-    from basler import BaslerNanoCET
+    from ..models.arduino import ArduinoNanoCET
+    from ..models.basler import BaslerNanoCET
 
     conf_fiber = {
         "config": {

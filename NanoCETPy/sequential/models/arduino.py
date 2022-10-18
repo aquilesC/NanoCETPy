@@ -7,7 +7,6 @@ import time
 
 import pyvisa
 from pyvisa import VisaIOError
-from serial import SerialException
 
 from NanoCETPy.dispertech.models.arduino import ArduinoModel
 from experimentor.lib.log import get_logger
@@ -18,16 +17,17 @@ rm = pyvisa.ResourceManager('@py')
 
 
 class ArduinoNanoCET(ArduinoModel):
-    '''ArduinoModel with modified initialize routine to enable NanoCET software connection check screen
+    """
+    ArduinoModel with modified initialize routine to enable NanoCET software connection check screen
 
-    while the :py:meth:`~sequential.models.experiment.MainSetup.initialize` of the :class:`~experiment.MainSetup()` runs in a loop 
+    while the :py:meth:`~sequential.models.experiment.MainSetup.initialize` of the :class:`~experiment.MainSetup()` runs in a loop
     triggering the device initialization methods, this :meth:`initialize` only completes if a device is found,
     otherwise it raises an error.
 
     The device is found by querying any connected serial devices for their name and expecting 'Dispertech' as the beginning.
 
     Additional getters and setters for laser and LEDs have been added as the query string was changed in the Arduino firmware.
-    '''
+    """
     def __init__(self, port=None, device=0, baud_rate=9600, initial_config=None):
         super().__init__(port=port, device=device, baud_rate=baud_rate, initial_config=initial_config)
         self.logger = get_logger(__name__)
@@ -44,9 +44,18 @@ class ArduinoNanoCET(ArduinoModel):
             'paused':           (1, 1, 1, 1),  # on "measurement page" while paused/stopped
             'error':            (2, 2, 2, 2),  # a general error state
         }
-        self.last_state_set = 'standby'
 
-    @Feature()
+        self.last_state_set = 'standby'
+        self._cartridge_led = 0
+        self._scattering_laser_power = 0
+        self._top_led = 0
+        self._fiber_led = 0
+        self._side_led = 0
+        self._power_led = 0
+        self._sample_led = 0
+        self._measuring_led = 0
+        self.driver = None
+
     def serial_number(self):
         with self.query_lock:
             return(self.driver.query('SN').strip().split(':')[1])
@@ -91,7 +100,6 @@ class ArduinoNanoCET(ArduinoModel):
         with self.query_lock:
             self.driver.query(f'PIEZO:{axis}:{duration}')
 
-
     def state(self, name, state=(0, 0, 0, 0)):
         if name in self.led_states:
             state = self.led_states[name]
@@ -101,28 +109,23 @@ class ArduinoNanoCET(ArduinoModel):
         self.last_state_set = name
         self.power_led, self.cartridge_led, self.sample_led, self.measuring_led = state
 
-
     @make_async_thread
     def initialize(self):
         with self.query_lock:
-            if self.initialized: return
+            if self.initialized:
+                return
             self.initializing = True
             if self.port:
-                try:
-                    if not self.port:
-                        self.port = rm.list_resources()[self.device]
-                    self.driver = rm.open_resource(self.port)
-                    time.sleep(1)
-                except:
-                    raise SerialException()
+                self.driver = rm.open_resource(self.port)
                 self.driver.baud_rate = self.baud_rate
             else:    
                 device_ports = rm.list_resources()
-                if len(device_ports) == 0: raise Exception()
+                if len(device_ports) == 0:
+                    raise Exception('No devices detected')
                 for port in device_ports:
                     try:
                         self.driver = rm.open_resource(port, baud_rate=115200)
-                        time.sleep(2)
+                        time.sleep(1)
                         self.driver.query('IDN')
                         if self.driver.query('IDN').startswith('Dispertech nanoCET FW 1.0'):
                             break
@@ -195,7 +198,6 @@ class ArduinoNanoCET(ArduinoModel):
         self.driver.read()
         self.logger.info('Finished moving')
 
-
     @Feature()
     def top_led(self):
         return self._top_led
@@ -228,6 +230,7 @@ class ArduinoNanoCET(ArduinoModel):
             self.driver.query(f'LED:SIDE:{status}')
             self._side_led = status
             self.logger.info(f'LED:SIDE:{status}')
+
     @Feature()
     def power_led(self):
         return self._power_led
@@ -271,7 +274,6 @@ class ArduinoNanoCET(ArduinoModel):
             self.driver.query(f'LED:MEASURING:{status}')
             self._measuring_led = status
             self.logger.info(f'LED:MEASURING:{status}')
-
 
     @Feature()
     def lid(self):

@@ -48,7 +48,6 @@ class ArduinoModel(ModelDevice):
         self._power_led = 0
         self._measure_led = 0
 
-
     @make_async_thread
     def initialize(self):
         """ This is a highly opinionated initialize method, in which the power of the laser is set to a minimum, the
@@ -92,24 +91,6 @@ class ArduinoModel(ModelDevice):
             self.driver.query(f'laser:{power}')
             self.logger.info(f'laser:{power}')
             self._scattering_laser_power = int(power)
-
-    @Feature()
-    def fluo_laser(self):
-        """ Changes the power of the laser used for fluorescence.
-
-        Parameters
-        ----------
-        power : int
-            Percentage of power (0-100)
-        """
-        return self._fluo_laser_power
-
-    @fluo_laser.setter
-    def fluo_laser(self, power):
-        with self.query_lock:
-            out_power = round(power/100*4095)
-            self.driver.query(f'OUT:488:{out_power}')
-            self._fluo_laser_power = int(power)
 
     @Feature()
     def side_led(self):
