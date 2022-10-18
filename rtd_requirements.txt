@@ -1,14 +1,2 @@
-﻿setuptools
-numpy
-pyqtgraph
-scipy
-yaml
-pyyaml
-experimentor
-scikit-image
-h5py
-pyzmq
-pypylon
-pyvisa
-pyserial
-pyqt5
+﻿-r requirements.txt
+sphinx
