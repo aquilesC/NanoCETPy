@@ -23,7 +23,6 @@ jobs:
       - name: Build executable
         run: |
           # stop the build if there are Python syntax errors or undefined names
-#          python setup_dist.py build
           python setup_dist.py bdist_msi
       - name: Upload pytest test results
         uses: actions/upload-artifact@v3
