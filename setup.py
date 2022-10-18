@@ -34,5 +34,19 @@ setup(
         "console_scripts": [
             "nanocet=NanoCETPy.__main__:main"
         ]
-    }
+    },
+    install_requires=[
+    'numpy',
+    'pyqtgraph',
+    'scipy',
+    'pyyaml',
+    'experimentor',
+    'scikit-image',
+    'h5py',
+    'pyzmq',
+    'pypylon',
+    'pyvisa',
+    'pyserial',
+    'pyqt5',
+        ],
 )
