@@ -1,7 +1,7 @@
 """
     Arduino Model
     =============
-    This is an ad-hoc model for controlling an Arduino Due board, which will in turn control a piezo-mirror, a laser,
+    This is an ad-hoc model for controlling an Arduino board, which will in turn control a piezo-mirror, a laser,
     and some LED's.
 """
 from multiprocessing import Event
