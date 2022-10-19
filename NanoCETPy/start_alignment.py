@@ -6,8 +6,8 @@ import yaml
 from PyQt5.QtWidgets import QApplication
 
 from experimentor.lib.log import get_logger, log_to_screen
-from .alignment.models.experiment import AlignmentSetup
-from .alignment.views.cam_window import AlignmentWindow, CartridgeWindow
+from NanoCETPy.alignment.models.experiment import AlignmentSetup
+from NanoCETPy.alignment.views.cam_window import AlignmentWindow, CartridgeWindow
 
 if __name__ == "__main__":
     logger = get_logger()
