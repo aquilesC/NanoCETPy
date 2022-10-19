@@ -1,11 +1,10 @@
-import sys
-import time
+USE_FIBER_CAMERA = False
 
-import pyqtgraph as pg
+import sys
 from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import (QApplication, QGridLayout, QGroupBox, QPushButton, QSlider, QSpinBox, QWidget)
-from pyqtgraph import GraphicsLayoutWidget
+from PyQt5.QtWidgets import (QApplication, QGridLayout, QHBoxLayout, QGroupBox, QSpinBox,
+                             QPushButton, QWidget, QSlider)
+import time
 
 
 # class LedSlider(QSlider):
@@ -19,6 +18,10 @@ from pyqtgraph import GraphicsLayoutWidget
 #
 #     def send_command(self, value):
 #         self.arduino.
+
+from PyQt5.QtGui import QFont
+import pyqtgraph as pg
+from pyqtgraph import GraphicsLayoutWidget
 
 
 class call_back:
@@ -36,10 +39,9 @@ class call_back:
         setattr(self.arduino, self.property_name, value)
         # self.property = value
 
-
 class Window(QWidget):
-    def __init__(self, arduino, camera_fiber, show_plot=False, parent=None):
-        super(Window, self).__init__(parent=parent)
+    def __init__(self, arduino, camera_fiber=None, show_plot=False):
+        super(Window, self).__init__()
         custom_font = QFont()
         custom_font.setPointSize(12)
         self.arduino = arduino
@@ -49,19 +51,25 @@ class Window(QWidget):
         # self.camera_fiber.trigger_camera()
         # img = self.camera_fiber.read_camera()[-1]
 
-        self.viewport = GraphicsLayoutWidget()
-        self.view = self.viewport.addViewBox(lockAspect=False, enableMenu=True)
-        self.imgItem = pg.ImageItem()
-        self.view.addItem(self.imgItem)
-        self.imv = pg.ImageView(view=self.view, imageItem=self.imgItem)
-        self.imv.ui.roiBtn.hide()
-        self.imv.ui.menuBtn.hide()
 
-        self.graph = pg.PlotWidget()
+
+        if self.camera_fiber:
+            self.viewport = GraphicsLayoutWidget()
+            self.view = self.viewport.addViewBox(lockAspect=False, enableMenu=True)
+            self.imgItem = pg.ImageItem()
+            self.view.addItem(self.imgItem)
+            self.imv = pg.ImageView(view=self.view, imageItem=self.imgItem)
+            self.imv.ui.roiBtn.hide()
+            self.imv.ui.menuBtn.hide()
+
+            self.graph = pg.PlotWidget()
+            self.resize(1200, 800)
+        else:
+            self.resize(650, 450)
 
         self.setFont(custom_font)
         self.setWindowTitle("Electronics Testing NanoCET: Connecting...")
-        self.resize(1200, 800)
+
         self.show()
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.check_connection)
@@ -90,8 +98,9 @@ class Window(QWidget):
 
         grid.addWidget(box_speed, 3, 3)
 
-        grid.addWidget(self.imv, 0, 4, 4, 5)
-        grid.setColumnStretch(4, 9)
+        if self.camera_fiber:
+            grid.addWidget(self.imv, 0, 4, 4, 5)
+            grid.setColumnStretch(4, 9)
 
         if self.show_plot:
             grid.addWidget(self.graph, 4, 0, 4, grid.columnCount())
@@ -102,7 +111,8 @@ class Window(QWidget):
 
         self.setLayout(grid)
 
-        self.connect_camera_fiber()
+        if self.camera_fiber:
+            self.connect_camera_fiber()
 
 
     def connect_camera_fiber(self):
@@ -253,8 +263,9 @@ class Window(QWidget):
 
     def closeEvent(self, event):
         self.timer.stop()
-        self.camera_fiber.stop_continuous_reads()
-        self.camera_fiber.stop_free_run()
+        if self.camera_fiber:
+            self.camera_fiber.stop_continuous_reads()
+            self.camera_fiber.stop_free_run()
         if self.connected:
             print('Closing connection to Arduino')
             self.arduino.driver.close()
@@ -262,8 +273,17 @@ class Window(QWidget):
 
 
 if __name__ == '__main__':
-    from ..models.arduino import ArduinoNanoCET
-    from ..models.basler import BaslerNanoCET
+    from NanoCETPy.sequential.models.arduino import ArduinoNanoCET
+    from NanoCETPy.sequential.models.basler import BaslerNanoCET
+
+    if len(sys.argv) > 1:
+        for arg in sys.argv[1:]:
+            if arg.startswith('USE_FIBER_CAMERA='):
+                c = arg.split('=')[-1].lower()
+                if c in ('true', '1'):
+                    USE_FIBER_CAMERA = True
+                if c in ('false', '0'):
+                    USE_FIBER_CAMERA = False
 
     conf_fiber = {
         "config": {
@@ -281,7 +301,10 @@ if __name__ == '__main__':
         "model_camera": "Dart"
     }
     arduino = ArduinoNanoCET(baud_rate=115200)
-    camera_fiber = BaslerNanoCET(conf_fiber['init'], conf_fiber['config'])
+    if USE_FIBER_CAMERA:
+        camera_fiber = BaslerNanoCET(conf_fiber['init'], conf_fiber['config'])
+    else:
+        camera_fiber = None
 
     app = QApplication(sys.argv)
     window = Window(arduino, camera_fiber)
