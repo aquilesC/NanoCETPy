@@ -1,7 +1,7 @@
 Sequential Module
 ==================
 
-.. automodule:: sequential
+.. automodule:: NanoCETPy.sequential
 
 
 .. autosummary::
@@ -9,5 +9,5 @@ Sequential Module
     :template: custom_module.rst
     :recursive:
 
-    sequential.models
-    sequential.views
+    NanoCETPy.sequential.models
+    NanoCETPy.sequential.views

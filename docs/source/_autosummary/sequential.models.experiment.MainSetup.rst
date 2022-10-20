@@ -1,7 +1,0 @@
-﻿sequential.models.experiment.MainSetup
-======================================
-
-.. currentmodule:: sequential.models.experiment
-
-.. autoclass:: MainSetup
-    :members:
