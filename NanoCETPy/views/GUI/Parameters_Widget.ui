@@ -78,7 +78,7 @@
        <height>0</height>
       </size>
      </property>
-     <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,0,1,0,3">
+     <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,0,1,0,0,3">
       <item>
        <widget class="QLabel" name="subtitle_fiber">
         <property name="font">
@@ -127,7 +127,7 @@
        </widget>
       </item>
       <item>
-       <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="0,1">
+       <layout class="QHBoxLayout" name="experiment_layout" stretch="0,1">
         <item>
          <widget class="QLabel" name="label_4">
           <property name="minimumSize">
@@ -135,6 +135,9 @@
             <width>150</width>
             <height>100</height>
            </size>
+          </property>
+          <property name="toolTip">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Name the experiment. It is also the name of the file to be saved. &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
           <property name="text">
            <string>Name:</string>
@@ -157,6 +160,36 @@
        </layout>
       </item>
       <item>
+       <layout class="QHBoxLayout" name="notes_layout">
+        <item>
+         <widget class="QLabel" name="label">
+          <property name="text">
+           <string>Notes:</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QTextEdit" name="notes_edit">
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>70</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>372</width>
+            <height>140</height>
+           </size>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
        <widget class="QLabel" name="subtitle_params">
         <property name="font">
          <font>
@@ -172,7 +205,7 @@
        </widget>
       </item>
       <item>
-       <layout class="QVBoxLayout" name="verticalLayout_4" stretch="0,0,0,0">
+       <layout class="QVBoxLayout" name="parameters_layout" stretch="0,0,0,0">
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_5" stretch="0,1,0">
           <item>
