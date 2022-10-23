@@ -37,3 +37,6 @@ html_static_path = ['_static']
 # Display todos by setting to True
 todo_include_todos = True
 
+autoapi_type = 'python'
+autoapi_dirs = ['../../NanoCETPy']
+autoapi_options = [ 'members', 'undoc-members', 'show-inheritance', 'show-module-summary', 'special-members', 'imported-members']

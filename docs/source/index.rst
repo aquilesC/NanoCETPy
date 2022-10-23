@@ -13,6 +13,8 @@ It is, as of now, not meant to be installed as package, considering its use case
 This documentation intends to show how to use the code and how it is structured in general. As all other exisiting modules are also contained in ``sequential`` only it is explained in some detail.
 
 
+Contents
+--------
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
@@ -21,5 +23,6 @@ This documentation intends to show how to use the code and how it is structured 
    structure
    sequential
    todo
+   api
 
 
