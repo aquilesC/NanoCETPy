@@ -46,7 +46,7 @@ setup(
     },
     install_requires=[
     'numpy',
-    'pyqtgraph',
+    'pyqtgraph==0.11',
     'scipy',
     'pyyaml',
     'experimentor',

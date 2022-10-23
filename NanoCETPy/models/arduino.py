@@ -170,6 +170,7 @@ class ArduinoNanoCET(ModelDevice):
             # self.logger.info('TEST arduino init done')
             time.sleep(0.05)
             self.retrieve_factory_values()
+            self.state('standby')
 
     @Feature()
     def scattering_laser(self):
