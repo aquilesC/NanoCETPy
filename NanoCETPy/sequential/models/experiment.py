@@ -2,7 +2,7 @@
     Experiment module for the entire usage sequence of the NanoCET 
 """
 # Is this is True, the focus and alignment algorithms will effectively be skipped:
-SKIP_ALIGNING = True  # Default: False
+SKIP_ALIGNING = False  # Default: False
 # String pointing to h5 file to use as test data. Replace with something that returns False to skip
 USE_TEST_DATA = r'C:\Users\aron\NanoCET\2022-09-22\Waterfall_70nm_2.h5'  # Default: ''
 SKIP_FIRST_LINES_IN_TEST_DATA = 500

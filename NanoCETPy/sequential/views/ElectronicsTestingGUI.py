@@ -56,9 +56,11 @@ class Window(QWidget):
         if self.camera_fiber:
             self.viewport = GraphicsLayoutWidget()
             self.view = self.viewport.addViewBox(lockAspect=False, enableMenu=True)
-            self.imgItem = pg.ImageItem()
-            self.view.addItem(self.imgItem)
-            self.imv = pg.ImageView(view=self.view, imageItem=self.imgItem)
+            # self.imgItem = pg.ImageItem()
+            # self.view.addItem(self.imgItem)
+            self.imv = pg.ImageView(view=self.view)#, imageItem=self.imgItem)
+            self.imgItem = self.imv.getImageItem()
+
             self.imv.ui.roiBtn.hide()
             self.imv.ui.menuBtn.hide()
 

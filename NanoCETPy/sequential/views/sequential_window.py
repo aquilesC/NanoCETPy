@@ -13,8 +13,8 @@ from PyQt5.QtWidgets import QMainWindow, QWidget, QFileDialog, QLabel, QSizePoli
 from experimentor import Q_
 from experimentor.lib.log import get_logger
 from experimentor.views.base_view import BaseView
-from .camera_viewer_widget import CameraViewerWidget
-from ..views import BASE_DIR_VIEW
+from NanoCETPy.sequential.views.camera_viewer_widget import CameraViewerWidget
+from NanoCETPy.sequential.views import BASE_DIR_VIEW
 
 logger = get_logger(__name__)
 

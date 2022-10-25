@@ -43,9 +43,16 @@ class CameraViewerWidget(DataViewWidget):
         self.viewport = GraphicsLayoutWidget()
         self.view = self.viewport.addViewBox(lockAspect=False, enableMenu=True)
 
-        self.img = pg.ImageItem()
-        self.view.addItem(self.img)
-        self.imv = pg.ImageView(view=self.view, imageItem=self.img)
+        # self.img = pg.ImageItem()
+        # self.view.addItem(self.img)
+        # self.imv = pg.ImageView(view=self.view, imageItem=self.img)
+
+        self.imv = pg.ImageView(view=self.view)
+        self.img = self.imv.getImageItem()
+        # self.view = self.imv.getView()
+        # self.view.setAspectLocked(False)
+        # self.view.setMenuEnabled(False)
+
 
         self.imv.ui.roiBtn.hide()
         self.imv.ui.menuBtn.hide()
@@ -112,7 +119,7 @@ class CameraViewerWidget(DataViewWidget):
         """ Setup a ROI box to drag over the fiber core in the sequential window
         """
         shape = self.last_image.shape
-        self.roi_box = pg.ROI((0,0), size=(shape[0], 100), pen={'color': "FF0", 'width': 4}, rotatable=False, maxBounds=QRect(0,-10,shape[0],100*shape[1]))
+        self.roi_box = pg.ROI((0,0), size=(shape[0], 100), pen={'color': "y", 'width': 4}, rotatable=False, maxBounds=QRect(0,-10,shape[0],100*shape[1]))
         self.view.addItem(self.roi_box)
 
     def setup_roi_lines(self, max_size=None):

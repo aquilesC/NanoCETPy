@@ -125,7 +125,7 @@ class ArduinoNanoCET(ArduinoModel):
                 for port in device_ports:
                     try:
                         self.driver = rm.open_resource(port, baud_rate=115200)
-                        time.sleep(1)
+                        time.sleep(1.2)
                         self.driver.query('IDN')
                         if self.driver.query('IDN').startswith('Dispertech nanoCET FW 1.0'):
                             break
@@ -135,6 +135,7 @@ class ArduinoNanoCET(ArduinoModel):
                             self.driver.close()
                         except:
                             pass
+                print(self.driver.session)
                 try:
                     self.driver.session
                 except pyvisa.errors.InvalidSession:
