@@ -25,10 +25,10 @@ from experimentor import Q_
 from experimentor.models.action import Action
 from experimentor.models.decorators import make_async_thread
 from experimentor.models.experiments import Experiment
-from NanoCETPy.sequential.models import model_utils as ut
-from NanoCETPy.sequential.models.arduino import ArduinoNanoCET
-from NanoCETPy.sequential.models.basler import BaslerNanoCET as Camera
-from NanoCETPy.sequential.models.movie_saver import WaterfallSaver
+from NanoCETPy.models import model_utils as ut
+from NanoCETPy.models.arduino import ArduinoNanoCET
+from NanoCETPy.models.basler import BaslerNanoCET as Camera
+from NanoCETPy.models.movie_saver import WaterfallSaver
 
 
 class MainSetup(Experiment):

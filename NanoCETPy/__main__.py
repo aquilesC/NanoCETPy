@@ -1,1 +1,1 @@
-from .start_sequential import main
+from .start import main

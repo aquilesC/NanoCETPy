@@ -29,9 +29,9 @@ from PyQt5 import QtGui
 from PyQt5.QtWidgets import QApplication
 
 from experimentor.lib.log import get_logger, log_to_screen
-from NanoCETPy.sequential.models.demo import DemoExperiment
-from NanoCETPy.sequential.models.experiment import MainSetup
-from NanoCETPy.sequential.views.sequential_window import SequentialMainWindow
+from NanoCETPy.models.demo import DemoExperiment
+from NanoCETPy.models.experiment import MainSetup
+from NanoCETPy.views.sequential_window import SequentialMainWindow
 
 from NanoCETPy import BASE_PATH
 

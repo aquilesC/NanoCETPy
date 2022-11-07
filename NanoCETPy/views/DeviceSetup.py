@@ -1,15 +1,11 @@
 USE_FIBER_CAMERA = False
 
 from experimentor.lib.log import get_logger, log_to_screen
-from NanoCETPy.sequential.models.experiment import MainSetup
+from NanoCETPy.models import MainSetup
 from NanoCETPy import BASE_PATH
 import yaml
 
-
-import sys
-from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtWidgets import (QApplication, QGridLayout, QHBoxLayout, QVBoxLayout, QGroupBox, QSpinBox,
-                             QPushButton, QWidget, QSlider)
+from PyQt5.QtWidgets import (QApplication, QHBoxLayout, QVBoxLayout, QGroupBox, QPushButton, QWidget)
 import time
 
 class NanoCETSetupGUI(QWidget):
