@@ -194,8 +194,6 @@ class ArduinoModel(ModelDevice):
 
     def finalize(self):
         self.logger.info('Finalizing Arduino')
-        self.power_led = 0
-        self.power_led = 0
         if self.initial_config is not None:
             self.config.update(self.initial_config)
             self.config.apply_all()
