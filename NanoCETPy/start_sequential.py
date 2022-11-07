@@ -60,7 +60,8 @@ def main():
     main_window.show()
     app.exec()
     experiment.finalize()
+    return experiment
 
 
 if __name__ == '__main__':
-    main()
+    debug = main()

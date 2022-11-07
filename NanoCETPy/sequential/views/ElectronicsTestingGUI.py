@@ -1,11 +1,13 @@
 USE_FIBER_CAMERA = False
 
 import sys
+from NanoCETPy.sequential.models.experiment import Q_, MainSetup, ArduinoNanoCET, Camera
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtWidgets import (QApplication, QGridLayout, QHBoxLayout, QGroupBox, QSpinBox,
                              QPushButton, QWidget, QSlider)
 import time
 
+from scipy import ndimage
 
 # class LedSlider(QSlider):
 #     def __init__(self, arduino, name, arduino_command, states=('off', 'on', 'blink'), *args, **kwargs):
@@ -40,17 +42,16 @@ class call_back:
         # self.property = value
 
 class Window(QWidget):
-    def __init__(self, arduino, camera_fiber=None, show_plot=False):
+    def __init__(self, arduino, camera_fiber=None, plot_func=None):
         super(Window, self).__init__()
         custom_font = QFont()
         custom_font.setPointSize(12)
         self.arduino = arduino
         self.camera_fiber = camera_fiber
-        self.show_plot = show_plot
+        self.plot_func = plot_func
 
         # self.camera_fiber.trigger_camera()
         # img = self.camera_fiber.read_camera()[-1]
-
 
 
         if self.camera_fiber:
@@ -64,8 +65,20 @@ class Window(QWidget):
             self.imv.ui.roiBtn.hide()
             self.imv.ui.menuBtn.hide()
 
-            self.graph = pg.PlotWidget()
+            self.pw = pg.PlotWidget()
             self.resize(1200, 800)
+
+            self.exposure_widget = QGroupBox('Exposure')
+            exposure_slider = QSlider(Qt.Horizontal)
+            exposure_slider.setRange(0, 1)
+            exposure_slider.setValue(1)
+            exposure_slider.valueChanged.connect(self.change_fiber_cam_exposure)
+            exposure_layout = QHBoxLayout()
+            exposure_layout.addWidget(exposure_slider)
+            self.exposure_widget.setLayout(exposure_layout)
+            # self.exposure_widget.setLayout(QHBoxLayout())
+            # self.exposure_widget.layout().addWidget(exposure_slider)
+
         else:
             self.resize(650, 450)
 
@@ -87,7 +100,7 @@ class Window(QWidget):
         grid.addWidget(self.led_slider('Cartridge', 'cartridge_led'), 1, 1)
         grid.addWidget(self.led_slider('Sample', 'sample_led'), 1, 2)
         grid.addWidget(self.led_slider('Measuring', 'measuring_led'), 1, 3)
-        grid.addWidget(self.laser_slider('Laser', grid.columnCount(), 10, 100), 2, 0, 1, grid.columnCount())
+        grid.addWidget(self.laser_slider('Laser', 10, 100), 2, 0, 1, grid.columnCount()-bool(self.plot_func))
 
         self.piezo_speed = QSpinBox(value=10, maximum=2**6-1)
         box_speed = QGroupBox('Piezo speed')
@@ -103,12 +116,19 @@ class Window(QWidget):
         if self.camera_fiber:
             grid.addWidget(self.imv, 0, 4, 4, 5)
             grid.setColumnStretch(4, 9)
+            grid.addWidget(self.exposure_widget, 2, 3)
 
-        if self.show_plot:
-            grid.addWidget(self.graph, 4, 0, 4, grid.columnCount())
-            self.curves = [self.graph.plot([0])]
-            self.curves.append(self.graph.plot([0]))
-            self.gr = self.graph.getPlotItem()
+        if self.plot_func and self.camera_fiber:
+            grid.addWidget(self.pw, 4, 0, 4, grid.columnCount())
+            self.plot = self.pw.plot([0])
+            self.plot.setPen(pg.mkPen(100, 200, 100))
+
+            self.plot2 = self.pw.plot([0])
+            self.plot2.setPen(pg.mkPen(200, 100, 100))
+
+            self.fom = []
+            # self.curves.append(self.graph.plot([0]))
+            # self.gr = self.pw.getPlotItem()
 
 
         self.setLayout(grid)
@@ -131,18 +151,30 @@ class Window(QWidget):
         self.imv.setImage(self.img)#, autoLevels=auto_levels, autoRange=auto_range, autoHistogramRange=auto_histogram_range)
 
     def process_fiber_image(self):
-        if self.show_plot and self.camera_fiber.initialized:
-            img = self.img
-            dark = img.min()
-            mx = img.max()
-            bright = int((mx - dark) * 0.9 + dark)  # the 90% value between min and max value
-            dark = int((bright - dark) * 0.1 + dark)  # the 10% value between "bright" and the min value: i.e. 9%
-            fom = (img < dark).sum() - (img > bright).sum()
-            fom2 = ((img < dark).sum() - (img > bright).sum()) * mx
-            print(fom, fom2)
-            self.gr.curves[0].append(fom)
-            self.gr.curves[1].append(fom2)
-            return fom, fom2
+        if self.plot_func and self.camera_fiber.initialized:
+
+            core_x, core_y = self.arduino.factory_cam
+            cm = ndimage.measurements.center_of_mass(self.img ** 2)
+            dist = ((cm[0] - core_y) ** 2 + (cm[1] - core_x) ** 2) ** 0.5
+            print(f'stored coord {(core_y, core_x)} detected coord {cm}, distance: {dist}')
+
+
+            fom = self.plot_func(self.img, core_x, core_y, tolerance=50)
+            self.fom.append(fom)
+            print(fom)
+            self.plot.setData(self.fom)
+            self.plot2.setData([k//2 for k in self.fom])
+
+    def change_fiber_cam_exposure(self, slider_value):
+        self.camera_fiber.stop_continuous_reads()
+        self.camera_fiber.stop_free_run()
+        exposures = (Q_('10us'), Q_('50ms'))
+        self.camera_fiber.config.update({'exposure': exposures[slider_value]})
+        self.camera_fiber.config.apply_all()
+
+        self.camera_fiber.start_free_run()
+        self.camera_fiber.continuous_reads()
+
 
 
     def check_connection(self):
@@ -184,27 +216,30 @@ class Window(QWidget):
             if not self.arduino.initialized:
                 del self.arduino
                 continue
+            time.sleep(0.1)
             idn = self.arduino.driver.query('IDN')
             if isinstance(idn, str):
                 self.setWindowTitle("Connected: "+idn)
                 if not idn.lower().startswith('dispertech'):
                     self.setWindowTitle("WARNING: Connected to unknown device")
             self.connected = idn
+            self.arduino.retrieve_factory_values()
             # self.timer.start(1000)
 
 
     def piezo(self, axis, name):
         groupBox = QGroupBox('Piezo '+name)
         layout = QGridLayout()
-        # def move_piezo_callback(dir, ax):
-        #     self.arduino.move_piezo(self.piezo_speed.value(), dir, ax)
-        #     self.process_fiber_image()
-        #
-        # layout.addWidget(QPushButton('-', clicked=lambda axis: move_piezo_callback(0, axis), maximumWidth=60), 0, 0)
-        # layout.addWidget(QPushButton('+', clicked=lambda axis: move_piezo_callback(1, axis), maximumWidth=60), 0, 1)
 
-        layout.addWidget(QPushButton('-', clicked=lambda : self.arduino.move_piezo(self.piezo_speed.value(), 0, axis), maximumWidth=60), 0, 0)
-        layout.addWidget(QPushButton('+', clicked=lambda : self.arduino.move_piezo(self.piezo_speed.value(), 1, axis), maximumWidth=60), 0, 1)
+        def move_piezo_callback(dir, ax):
+            self.arduino.move_piezo(self.piezo_speed.value(), dir, ax)
+            self.process_fiber_image()
+
+        layout.addWidget(QPushButton('-', clicked=lambda _: move_piezo_callback(0, axis), maximumWidth=60), 0, 0)
+        layout.addWidget(QPushButton('+', clicked=lambda _: move_piezo_callback(1, axis), maximumWidth=60), 0, 1)
+
+        # layout.addWidget(QPushButton('-', clicked=lambda : self.arduino.move_piezo(self.piezo_speed.value(), 0, axis), maximumWidth=60), 0, 0)
+        # layout.addWidget(QPushButton('+', clicked=lambda : self.arduino.move_piezo(self.piezo_speed.value(), 1, axis), maximumWidth=60), 0, 1)
 
         groupBox.setLayout(layout)
         return groupBox
@@ -214,7 +249,7 @@ class Window(QWidget):
             slider.setValue(0)
             time.sleep(0.01)
 
-    def laser_slider(self, name, gridspan=4, step=10, max_val=100):
+    def laser_slider(self, name, step=10, max_val=100):
         groupBox = QGroupBox(name)
         spinbox = QSpinBox()
         spinbox.setMaximum(max_val)
@@ -275,9 +310,6 @@ class Window(QWidget):
 
 
 if __name__ == '__main__':
-    from NanoCETPy.sequential.models.arduino import ArduinoNanoCET
-    from NanoCETPy.sequential.models.basler import BaslerNanoCET
-
     if len(sys.argv) > 1:
         for arg in sys.argv[1:]:
             if arg.startswith('USE_FIBER_CAMERA='):
@@ -304,10 +336,10 @@ if __name__ == '__main__':
     }
     arduino = ArduinoNanoCET(baud_rate=115200)
     if USE_FIBER_CAMERA:
-        camera_fiber = BaslerNanoCET(conf_fiber['init'], conf_fiber['config'])
+        camera_fiber = Camera(conf_fiber['init'], conf_fiber['config'])
     else:
         camera_fiber = None
 
     app = QApplication(sys.argv)
-    window = Window(arduino, camera_fiber)
+    window = Window(arduino, camera_fiber, plot_func=MainSetup.focus_merit)
     app.exec()

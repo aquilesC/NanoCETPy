@@ -18,17 +18,17 @@ from multiprocessing import Event
 
 import numpy as np
 import yaml
-from scipy import optimize
+from scipy import optimize, ndimage
 from skimage import data
 
 from experimentor import Q_
 from experimentor.models.action import Action
 from experimentor.models.decorators import make_async_thread
 from experimentor.models.experiments import Experiment
-from . import model_utils as ut
-from .arduino import ArduinoNanoCET
-from .basler import BaslerNanoCET as Camera
-from .movie_saver import WaterfallSaver
+from NanoCETPy.sequential.models import model_utils as ut
+from NanoCETPy.sequential.models.arduino import ArduinoNanoCET
+from NanoCETPy.sequential.models.basler import BaslerNanoCET as Camera
+from NanoCETPy.sequential.models.movie_saver import WaterfallSaver
 
 
 class MainSetup(Experiment):
@@ -65,6 +65,7 @@ class MainSetup(Experiment):
         self.display_image = self.demo_image
         self.active = True
         self.now = None
+        self._trigger_camera_auto_range = False
 
     @Action
     def initialize(self):
@@ -124,21 +125,59 @@ class MainSetup(Experiment):
         """
         Live view for manual focussing of microscope.
         """
+        self.electronics.scattering_laser = 0
+        self.electronics.top_led = 1
         self.set_live(self.camera_microscope, False)
         self.set_live(self.camera_fiber, False)
         while self.camera_microscope.free_run_running: time.sleep(.1)
         time.sleep(.1)
-        self.camera_fiber.clear_ROI()
-        self.camera_microscope.clear_ROI()
+        # self.camera_fiber.clear_ROI()
+        # self.camera_microscope.clear_ROI()
+        self.camera_fiber.ROI = self.config['camera_fiber']['config']['ROI']
+        self.camera_microscope.ROI = self.config['camera_microscope']['config']['ROI']
         self.set_live(self.camera_microscope, True)
         self.update_camera(self.camera_microscope, self.config['defaults']['microscope_focusing']['low'])
-        self.electronics.top_led = 1
+        self.aligned = False
 
     def focus_stop(self):
         self.set_live(self.camera_microscope, False)
         self.electronics.top_led = 0
         self.img_focus_microscope = self.camera_microscope.temp_image.copy()
-    
+
+
+    def identify_fiber_core_in_microscope(self, img):
+        """
+        Tries to find the fiber core in a microscope image.
+        If it fails, it will return a value near the middle.
+
+        returns (int) center pixel index
+        """
+        cross_cut = np.median(img, axis=0)
+        cross_cut = np.convolve(cross_cut, [0.25, 0.5, 0.25], 'same')  # smooth a bit
+        cross_cut[0], cross_cut[-1] = cross_cut[1], cross_cut[-2]  # fix endpoints
+        cross_cut_diff = np.diff(cross_cut)
+        side1 = np.argmin(cross_cut_diff)
+        side2 = np.argmax(cross_cut_diff)
+        self.logger.info(f'Sides at [{side1}, {side2}]')
+        if np.abs((side2 - side1) - 415) < 15:
+            center_estimate = (side1 + side2)/2  # The middle between the two edges
+            self.logger.info(f'Full fiber found, center_estimate = {center_estimate}')
+        elif np.abs((side2 - side1) - 207) < 10:
+            # If the edge of the fiber is ont visible and the distance is ~ 207, the other min/max could be the core
+            if cross_cut_diff.max() > -cross_cut_diff.min():
+                center_estimate = side1 + 5
+            else:
+                center_estimate = side2 - 5
+            self.logger.info(f'Partial fiber found, center_estimate = {center_estimate}')
+        else:
+            center_estimate = len(cross_cut) / 2
+            self.logger.info(f"Couldn't find fiber, center_estimate = {center_estimate}")
+        center_fit = int(center_estimate) - 9 + 3 + np.argmin(np.convolve(cross_cut[int(center_estimate) - 9: int(center_estimate) + 10], np.ones(7) / 7, 'valid'))
+        self.logger.info(f'Center by local minimum = {center_fit}')
+        center = np.ceil((center_estimate + center_fit * 2) / 3)
+        self.logger.info(f'Core identified at {center}')
+        return center
+
     @make_async_thread
     def start_alignment(self):
         """ Wraps the whole alignment procedure from focussing to aligning.
@@ -150,6 +189,7 @@ class MainSetup(Experiment):
         self.active = True
         self.now = datetime.now()
         self.saving_images = True
+        self._trigger_camera_auto_range = False
 
         if False: # TESTING
             time.sleep(5)
@@ -165,24 +205,35 @@ class MainSetup(Experiment):
         self.camera_fiber.acquisition_mode = self.camera_fiber.MODE_SINGLE_SHOT
         self.camera_microscope.acquisition_mode = self.camera_microscope.MODE_SINGLE_SHOT
         # Set exposure and gain
-        self.update_camera(self.camera_fiber, self.config['defaults']['laser_focusing']['low'])
+
         # Turn on Laser
-        self.electronics.fiber_led = 0
+        # self.electronics.fiber_led = 0
         self.electronics.top_led = 0
         self.electronics.side_led = 0
-        laser_focussing_power = self.config['defaults']['laser_focusing'].get('laser_power', 3)  # Get power for laser focussing from config, use 3 if it's not present
-        img = self.set_laser_power(laser_focussing_power)
-        # Find focus function
-        self.find_focus()
-        self.logger.info('TEST focus done')
-        # Turn off laser
-        self.set_laser_power(0)
-        # Turn on fiber LED
-        self.electronics.fiber_led = 1
-        # Set exposure and gain
-        self.update_camera(self.camera_fiber, self.config['defaults']['laser_focusing']['high'])
+        self.electronics.scattering_laser = 0
 
-        # Find center
+        # Step 1: Check if the (unfocused) fiber facet is the expected location. (using the fiber LED)
+        if not self.validate_initial_fiber_position():
+            self.logger.warning('Check cartridge position')
+            self.aligned = 'check cartridge'  # This will signal to the GUI to show a pop-up
+            return
+
+        # Step 2: Find the piezo Z position where the laser spot is focused on the fiber facet.
+        self.update_camera(self.camera_fiber, self.config['defaults']['laser_focusing']['low'])
+        laser_focussing_power = self.config['defaults']['laser_focusing'].get('laser_power', 3)  # Get power for laser focussing from config, use 3 if it's not present
+        self.set_laser_power(laser_focussing_power)
+        if not self.find_focus():
+            self.logger.warning('Laser not focused. Trying again...')
+            if not self.find_focus():
+                self.logger.warning('Laser not focused.')
+                self.aligned = 'bad focus'
+                self.set_laser_power(0)
+                return
+        self.set_laser_power(0)
+
+        # Step 3: Identify the center of the fiber. (using the fiber LED)
+        self.electronics.fiber_led = 1
+        self.update_camera(self.camera_fiber, self.config['defaults']['laser_focusing']['high'])
         self.camera_fiber.trigger_camera()
         self.img_fiber_facet = self.camera_fiber.read_camera()[-1]
         img = self.img_fiber_facet
@@ -192,61 +243,113 @@ class MainSetup(Experiment):
         ksize = 15
         kernel = ut.circle2d_array((int(ksize/2), int(ksize/2)), 5, (ksize,ksize)) * 5.01
         kernel = (kernel - np.mean(kernel)) / np.std(kernel)
-
         fiber = (img - np.mean(img)) / np.std(img)
         fibermask = ut.image_convolution(fiber, kernel=kernel)
-
         fiber_center = np.argwhere(fibermask==np.max(fibermask))[0]
         # print(fiber_center, [389, 595])
 
         self.logger.info(f'TEST fiber center is {fiber_center}')
-        # Turn off LED
         self.electronics.fiber_led = 0
-        # Set exposure and gain
         self.update_camera(self.camera_fiber, self.config['defaults']['laser_focusing']['low'])
 
-        # Turn on Laser
+        # Step 4: Using the fiber camera position the laser spot onto the previously determined center of the fiber.
         self.set_laser_power(laser_focussing_power)
         time.sleep(.05)
-        # Find alignment function
         self.align_laser_coarse(fiber_center)
+
+        # Step 5: Use the laser at max power and the scattered light in the microscope camera to optimize incoupling
         self.set_laser_power(99)
-        time.sleep(.05)
         self.update_camera(self.camera_microscope, self.config['defaults']['microscope_focusing']['high'])
-        time.sleep(1)
-        self.align_laser_fine()
+        time.sleep(.1)
+        self._trigger_camera_auto_range = True  # When
+        if not self.align_laser_fine():
+            self.logger.warning('Low scattering detected')
+            self.aligned = 'low scattering'  # This will signal to the GUI to show a pop-up
+            return
+
         self.set_live(self.camera_microscope, True)
         self.aligned = True
 
         self.logger.info('TEST Alignment done')
 
-    # def find_focus(self):
-    #     """ Finding the focus with turned on laser by minimizing area of laser reflection.
-    #     Idea: Laser beam and thus reflection have gaussian intensity profile. The lower the spread the less pixel values are above a certain arbitrary percentile
-    #     Procedure: Check number of pixels above percentile and compare to previous measurement. If increasing, change direction and reduce speed. Stop at a certain minimum speed.
-    #
-    #     :return: None
+    def validate_initial_fiber_position(self):
+        """
+        Check if the (unfocused) fiber facet is the expected location.
+        Determines the center of mass of the unfocused fiber facet (with the fiber LED).
+        The expected location can be retrieved from config, or from arduino (if it's not in the config).
+        The tolerance is retrieved from config (or a default of 50 is used).
+
+        return: (bool) True if distance between center of (unfocused) fiber and the expected location is less than the tolerance.
+        """
+        time.sleep(0.01)
+        self.electronics.fiber_led = 1
+        # Get the expected location from config file, or from arduino memory:
+        core_x, core_y = self.config['defaults'].get('core_position', self.electronics.factory_cam)
+        self.logger.info(f"Expected fiber center: ({core_y}, {core_x})")
+        self.update_camera(self.camera_fiber, self.config['defaults']['laser_focusing']['high'])
+        time.sleep(0.01)
+        self.camera_fiber.trigger_camera()
+        img = self.camera_fiber.read_camera()[-1]
+
+        cm = ndimage.measurements.center_of_mass(img**2)
+        self.logger.info(f"Fiber center of mass at {cm}")
+        dist = ((cm[0]-core_y)**2 + (cm[1]-core_x)**2)**0.5
+        tolerance = self.config['defaults'].get('core_position_tolerance', 50)
+        self.logger.info(f"Distance = {dist}. Tolerance = {tolerance}")
+        # self.logger.info(f'stored coord {(core_y, core_x)} detected coord {cm}, distance: {dist}')
+        self.electronics.fiber_led = 0
+        return dist < tolerance
+
+    @staticmethod
+    def focus_merit(img, core_x, core_y, tolerance, half_size=125):
+        """
+        A helper function that calculates a figure of merit for how well the laser is in focus on the fiber facet.
+        return : (int) The value to be maximized
+        """
+        dark = img.min()
+        mx = img.max()
+        bright = int((mx - dark) * 0.9 + dark)  # the 90% value between min and max value
+        dark = int((bright - dark) * 0.1 + dark)  # the 10% value between "bright" and the min value: i.e. 9%
+        fom = (img < dark).sum() - (img > bright).sum()
+        fom2 = ((img < dark).sum() - (img > bright).sum()) * mx
+        # print(dark, bright, fom, fom2)
+        return fom2
+
+    # @staticmethod
+    # def focus_merit(img, core_x, core_y, tolerance, half_size=125):
     #     """
-    #     self.logger.info('TEST start finding focus')
-    #     direction = 0
-    #     speed = 50
-    #     self.camera_fiber.trigger_camera()
-    #     img = self.camera_fiber.read_camera()[-1]
-    #     val_new = np.sum(img > 0.8*np.max(img))
-    #     while self.active and not DEBUG:
-    #         val_old = val_new
-    #         self.logger.info(f'TEST moving with speed {speed} in direction {direction}')
-    #         self.electronics.move_piezo(speed, direction, self.config['electronics']['focus_axis'])
-    #         time.sleep(.1)
-    #         self.camera_fiber.trigger_camera()
-    #         img = self.camera_fiber.read_camera()[-1]
-    #         val_new = np.sum(img > 0.8*np.max(img))
-    #         if val_old < val_new:
-    #             direction = (direction + 1) % 2
-    #             speed -= 5
-    #         if speed == 20:
-    #             break
-    #     self.img_find_focus = img
+    #     A helper function that calculates a figure of merit for how well the laser is in focus on the fiber facet.
+    #     return : (int) The value to be maximized
+    #     """
+    #     # Note that the fiber facet is roughly 250 x 250 pixels large
+    #
+    #     img = img[core_y-half_size+1:core_y+half_size, core_x-half_size+1:core_x+half_size]
+    #
+    #     # create normalized weight array that
+    #     X, Y = np.meshgrid(np.arange(-half_size+1, half_size), np.arange(-half_size+1, half_size))
+    #     R = (X**2+Y**2)**0.5 / tolerance * np.pi * 0.5
+    #     R[R > np.pi] = np.pi
+    #     weight = 1 + np.cos(R)
+    #     weight /= weight.sum()
+    #
+    #     mx_weighted = (weight * img).max()
+    #
+    #     weight2 = ((X ** 2 + Y ** 2)**0.5 / tolerance - 1) * np.pi/2
+    #     weight2[weight2 < 0] = np.sin(weight2[weight2 < 0])
+    #     weight2 += 2
+    #
+    #
+    #     dark = img.min()
+    #     mx = img.max()
+    #     bright = int((mx - dark) * 0.9 + dark)  # the 90% value between min and max value
+    #     dark = int((bright - dark) * 0.1 + dark)  # the 10% value between "bright" and the min value: i.e. 9%
+    #
+    #     darkness_norm = (img < dark).sum() / (half_size*2-1)**2  # this value will be less than 1 but approaches 1 for a focused spot
+    #     brightness_norm = (img > bright).sum() / 250
+    #     fom = (img < dark).sum() - (img > bright).sum()
+    #     fom2 = ((img < dark).sum() - (img > bright).sum()) * mx
+    #     # print(dark, bright, fom, fom2)
+    #     return fom2
 
     def find_focus(self):
         """
@@ -258,9 +361,8 @@ class MainSetup(Experiment):
 
         :return: None
         """
-
-        direction = 1
-        speeds = [3, 5, 8, 13, 21, 35, 58]  # in reverse order
+        speeds = [2, 3, 5, 8, 13, 21, 35, 58]  # will be used in reverse order
+        # speeds = [3, 5, 7, 10, 15, 23, 34, 51]  # will be used in reverse order
         self.camera_fiber.trigger_camera()
         img = self.camera_fiber.read_camera()[-1]
 
@@ -271,17 +373,10 @@ class MainSetup(Experiment):
         # Testing a new figure of merit for the laser being focussed
         # It will look for "as much dark pixels as possible" and "as few very bright pixels as possible"
 
-        def focus_merit(img):
-            dark = img.min()
-            mx = img.max()
-            bright = int((mx - dark) * 0.9 + dark)  # the 90% value between min and max value
-            dark = int((bright - dark) * 0.1 + dark)  # the 10% value between "bright" and the min value: i.e. 9%
-            fom = (img < dark).sum() - (img > bright).sum()
-            fom2 = ((img < dark).sum() - (img > bright).sum()) * mx
-            print(dark, bright, fom, fom2)
-            return fom2
+        core_x, core_y = self.config['defaults'].get('core_position', self.electronics.factory_cam)
+        tolerance = self.config['defaults'].get('core_position_tolerance', 50)
 
-        current = focus_merit(img)
+        current = MainSetup.focus_merit(img, core_x, core_y, tolerance)
         direction = len(speeds) % 2
         speed = speeds.pop()
         while self.active:
@@ -291,16 +386,25 @@ class MainSetup(Experiment):
             time.sleep(.05)
             self.camera_fiber.trigger_camera()
             img = self.camera_fiber.read_camera()[-1]
-            current = focus_merit(img)
+            current = MainSetup.focus_merit(img, core_x, core_y, tolerance)
+            print(current)
             if current < previous:
                 if not speeds:
                     break
+                # Alternate direction, while ensuring the last move will always have direction=1 (i.e. "positive" piezo move)
                 direction = len(speeds) % 2
                 speed = speeds.pop()
         self.img_find_focus = img
 
+        self.img_align_laser_course = img
+        threshold = self.config['defaults'].get('alignment', {}).get('focus_threshold', 310e6)
+        self.logger.info(f'Focus value = {current}. Threshold = {threshold}')
+        return current > threshold
+
+
     def align_laser_coarse(self, fiber_center):
-        """ Aligns the focussed laser beam to the previously detected center of the fiber.
+        """
+        Aligns the focussed laser beam to the previously detected center of the fiber.
         
         :param fiber_center: coordinates of the center of the fiber 
         :type fiber_center: array or tuple of shape (2,)
@@ -329,7 +433,7 @@ class MainSetup(Experiment):
         for idx, c in enumerate(fiber_center):
             self.logger.info(f'TEST start aligning axis {axis} at index {idx}')
             direction = 0
-            speed = 5
+            speed = 3
             self.camera_fiber.trigger_camera()
             img = self.camera_fiber.read_camera()[-1]
             mask = ut.gaussian2d_array(fiber_center, 19000, img.shape)
@@ -359,8 +463,7 @@ class MainSetup(Experiment):
                         break
                     speed = 1
             axis = self.config['electronics']['vertical_axis']
-        
-        self.img_align_laser_course = img
+
 
     # def align_laser_fine(self):
     #     """ Maximises the fiber core scattering signal seen on the microscope cam by computing the median along axis 0.
@@ -407,38 +510,127 @@ class MainSetup(Experiment):
 
     def align_laser_fine(self):
         """
+        Optimize laser spot position by looking at scattered light in fiber with the microscope camera.
+
         Iterate both axes multiple times, always finishing piezo motion in positive direction.
         Because the piezo steps are very large, don't use a drop in intensity as the moment to stop, but the expected
         maximum encountered on a previous sweep.
 
         """
         def figure_of_merit():
+            """Local helper function that calculates a figure of merit to be optimized"""
             self.camera_microscope.trigger_camera()
             time.sleep(0.1)  # For debugging
-            img = self.camera_microscope.read_camera()[-1]
-            median = np.median(img, axis=0)
-            figure = np.max(median)/np.min(median)
-            # self.logger.info(f'Figure of merit: {figure}')
-            return img, figure
+            img_ = self.camera_microscope.read_camera()[-1]
+            # bin 4 pixels along the fiber into 1:
+            img4 = img_[:img_.shape[0]-(img_.shape[0]%4), :].astype(float)
+            img4 = img4[::4] + img4[1::4] + img4[2::4] + img4[3::4]
+            pos = np.argmax(img4, axis=1)
+            ampl = np.max(img4, axis=1)
+            try:
+                center_fit = np.polyfit(np.arange(img4.shape[0]), pos, w=ampl, deg=1)
+                center = lambda p: np.polyval(center_fit, p)
+                if not 0 < center_fit[1] < img4.shape[1] or not np.polyval(center_fit, img4.shape[0]):
+                    raise  # don't use fit if the line is fully in the image
+            except:
+                # Fall back on combination of position of maximum and the center of the window
+                self.logger.info('Discarding fit')
+                center_fit = [0, img4.shape[1]//2]
+                center = lambda p: (np.polyval(center_fit, p) + 2 * pos[p]) / 3
+            w = lambda p, sig: np.exp(-((np.arange(img4.shape[1]) - center(p)) / sig) ** 2 / 2)
+            sig_peak = 6
+            sig_surround = 9
+            weight_peak = lambda p: w(p, sig_peak)/w(p, sig_peak).sum()
+            weight_surrounding = lambda p: (1-2*w(p, sig_surround))*(w(p, sig_surround)<0.5) / \
+                                          ((1-2*w(p, sig_surround))*(w(p, sig_surround)<0.5)).sum()
+            peaks = np.zeros(img4.shape[0])
+            surroundings = np.zeros(img4.shape[0])
+            for p in range(img4.shape[0]):
+                peaks[p] = np.sum(img4[p, :] * weight_peak(p))
+                surroundings[p] = np.sum(img4[p, :] * weight_surrounding(p))
+            peaks_corr = peaks - surroundings
+            # Only use the 90% of the data that has the lowest value for surrounding.
+            # (In the hope to be less sensitive to small floating scatterers)
+            peaks_corr = peaks_corr[np.argsort(surroundings)[:int(len(surroundings) * 0.9)]]
+            return img_, np.median(peaks_corr)
+
+            #
+            # peaks, next_to_peaks = 2*[np.zeros(img.shape[0])]
+            # from scipy import optimize
+            # peak_func = lambda ampl, offset, width: ampl*np.exp(-0.5*((np.arange(img.shape[1])-offset)/width)**2)
+            # for p in range(img.shape[0]):
+            #     optimize.fmin(peak_func, x0=[np.polyval(center_fit)])
+            #     center = int(np.round(np.polyval(center_fit, p)))
+            #     on_peak_line = img[p, max(center-2, 0): min(center+2, img.shape[1])]
+            #     peaks[p] = np.mean(on_peak_line)
+            #     next_to_peaks[p] =
+            #
+            #
+            #
+            # N = 8
+            # cross_cuts = np.empty((N, img.shape[1]))
+            # means, stdevs, position_of_max = [np.zeros(N)]*3
+            # for section in range(8):
+            #     img_section = img[int(img.shape[0]/N*section):int(img.shape[0]/N*(section+1)), :]
+            #     cross_cuts[section, :] = np.median(img_section, axis=0)
+            #     position_of_max[section] = np.argmax(cross_cuts[section, :])
+            #     means[section] = np.mean(img_section[:])
+            #     stdevs[section] = np.std(img_section[:])
+            #
+            # maxima = np.maximum(cross_cuts, axis=1)
+            # peak_width = np.sum((cross_cuts / maxima) > 0.8, axis=1)
+            # most_deviating_section_by_peak_width = np.argmax(np.abs(peak_width - np.mean(peak_width)))
+            # most_deviating_section_by_mean = np.argmax(np.abs(means - np.mean(means)))
+            # most_deviating_section_by_stdev = np.argmax(np.abs(stdevs - np.mean(stdevs)))
+            # most_deviating_section_by_position_of_max = np.argmax(np.abs(position_of_max - np.mean(position_of_max)))
+            # deviating_indices = [most_deviating_section_by_peak_width, most_deviating_section_by_mean, most_deviating_section_by_stdev, most_deviating_section_by_position_of_max]
+            # print('deviating_indices', deviating_indices)
+            # indices = np.setdiff1d(np.arange(N), deviating_indices)
+            # cross_cuts = cross_cuts[indices, :]
+            # # typical_bg = np.median(np.mean(cross_cut, axis=0))
+            # np.maximum(cross_cuts, axis=1)
+            # np.argmax(means)
+            # np.argmax(stdevs)
+            #
+            # median = np.median(img, axis=0)
+            # figure = np.max(median)/np.min(median)
+            # # self.logger.info(f'Figure of merit: {figure}')
+            # return img, figure
+
+        # def figure_of_merit():
+        #     self.camera_microscope.trigger_camera()
+        #     time.sleep(0.1)  # For debugging
+        #     img = self.camera_microscope.read_camera()[-1]
+        #     median = np.median(img, axis=0)
+        #     figure = np.max(median)/np.min(median)
+        #     # self.logger.info(f'Figure of merit: {figure}')
+        #     return img, figure
 
         if SKIP_ALIGNING:
             self.img_align_laser_fine, _ = figure_of_merit()
-            return
+            return True
 
         img, current = figure_of_merit()
         highest_values = []
         N = 2  # increase the number of sweeps if desired
-        step=0
+        # step = 0
+        steps_taken = [[0, 0], [0, 0]]  # steps_taken[axis][direction]
         for iteration in range(N):
             for axis in [0, 1]:
                 for i, direction in enumerate([0, 1, 0, 1]):
-                    print(step)
                     highest_values.append(current)
                     passed_optimum = False
-                    for step in range(6 + 4*direction):  # put some kind of limit on the number of steps, just in case
+                    # if direction == 0:
+                    #     max_steps = int(min(0, steps_taken[axis][1] / 1.5 - steps_taken[axis][0]))
+                    # else:
+                    #     max_steps = int(min(0, steps_taken[axis][0] * 1.5 - steps_taken[axis][1]))
+                    # print('max steps:', iteration, axis, direction, max_steps)
+                    for step in range(4 + 2*direction):#, + max_steps):  # put some kind of limit on the number of steps, just in case
                         previous = current
                         self.electronics.move_piezo(1, direction, axis)
+                        steps_taken[axis][direction] += 1
                         img, current = figure_of_merit()
+                        print(current)
                         highest_values[-1] = max(highest_values[-1], current)
                         # On the last sweep in "positive" direction, exit loop also if figure of merit reaches 99% of the maximum
                         # found so far. (This is to reduce the chance of stepping over the optimum)
@@ -449,15 +641,20 @@ class MainSetup(Experiment):
                                 passed_optimum = True
                                 continue
                             break
-        img, current = figure_of_merit()
-        highest_values.append(current)
-        print(highest_values)
+        img, final = figure_of_merit()
+        highest_values.append(final)
+        # print(highest_values)
+        self.logger.info('steps taken: ax0 -{} +{}, ax1 -{} +{}'.format(*steps_taken[0], *steps_taken[1]))
         self.img_align_laser_fine = img
+        scattering_threshold = self.config['defaults'].get('alignment', {}).get('scattering_threshold', 50)
+        self.logger.info(f'Scattering value = {final}. Threshold = {scattering_threshold}')
+        # This quality threshold needs to be investigated
+        return (final > scattering_threshold)
 
 
-    @make_async_thread
+    # @make_async_thread
     def find_ROI(self, crop=False):
-        """Assuming alignment, this function fits a gaussian to the microscope images cross section to compute an ROI
+        """Assuming alignment, this function fits a gaussian to the microscope images cross-section to compute a ROI
         """
         self.update_camera(self.camera_microscope, self.config['defaults']['microscope_focusing']['high'])
         self.set_laser_power(99)
@@ -501,7 +698,7 @@ class MainSetup(Experiment):
             argmax_measure = (argmax_measure + measure.shape[0]/2)/2  # bias it towards the center
             cx = int(measure.shape[0] / 2)
             measure = measure / np.max(measure)
-            xvals = np.linspace(0,1,measure.shape[0]) - 0.5
+            xvals = np.linspace(0, 1, measure.shape[0]) - 0.5
             gaussian1d = lambda x, mean, var, A, bg: A * np.exp(-(x-mean)**2 / (2 *var)) + bg
             popt, pcov = optimize.curve_fit(
                 gaussian1d,
@@ -521,7 +718,7 @@ class MainSetup(Experiment):
         width = self.config['defaults']['core_width']
         current_roi = self.camera_microscope.ROI
         new_y_offset = current_roi[1][0]+cx-width
-        new_roi = (current_roi[0], (new_y_offset, 2*width))
+        new_roi = (current_roi[0], (new_y_offset, 2*width+1))
         self.logger.info(f'setting ROI width: {width}')
         self.camera_microscope.ROI = new_roi
 
@@ -739,9 +936,18 @@ class MainSetup(Experiment):
 
         if self.camera_microscope:
             self.camera_microscope.finalize()
-        if self.electronics:
+        if self.electronics and self.electronics.initialized:
             self.set_laser_power(0)
             self.electronics.finalize()
 
         super(MainSetup, self).finalize()
         self.finalized = True
+
+if __name__ == '__main__':
+    from NanoCETPy import BASE_PATH
+    self = MainSetup()
+    if not (config_filepath := BASE_PATH / 'config_user.yml').is_file():
+        config_filepath = BASE_PATH / 'resources/config_default.yml'
+    self.load_configuration(config_filepath, yaml.UnsafeLoader)
+    self.initialize()
+    self.validate_initial_fiber_position()

@@ -135,7 +135,6 @@ class ArduinoNanoCET(ArduinoModel):
                             self.driver.close()
                         except:
                             pass
-                print(self.driver.session)
                 try:
                     self.driver.session
                 except pyvisa.errors.InvalidSession:
@@ -280,6 +279,13 @@ class ArduinoNanoCET(ArduinoModel):
     def lid(self):
         with self.query_lock:
             return self.driver.query(f'LID').strip()
+
+    def finalize(self):
+        self.scattering_laser = 0
+        self.fiber_led = 0
+        self.top_led = 0
+        self.state('standby')
+        super().finalize()
 
 
 if __name__ == '__main__':

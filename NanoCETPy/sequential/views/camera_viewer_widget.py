@@ -115,11 +115,11 @@ class CameraViewerWidget(DataViewWidget):
         else:
             self.logger.debug(f'No new image to update')
     
-    def setup_roi_box(self):
+    def setup_roi_box(self, offset=0, height=100):
         """ Setup a ROI box to drag over the fiber core in the sequential window
         """
         shape = self.last_image.shape
-        self.roi_box = pg.ROI((0,0), size=(shape[0], 100), pen={'color': "y", 'width': 4}, rotatable=False, maxBounds=QRect(0,-10,shape[0],100*shape[1]))
+        self.roi_box = pg.ROI((0, offset), size=(shape[0], height), pen={'color': "y", 'width': 4}, rotatable=False, maxBounds=QRect(0,0,shape[0],shape[1]))
         self.view.addItem(self.roi_box)
 
     def setup_roi_lines(self, max_size=None):
@@ -223,6 +223,11 @@ class CameraViewerWidget(DataViewWidget):
         """
 
         h, y = self.img.getHistogram()
+        # try:
+        #     print(self.last_image.min(), self.last_image.max())
+        # except:
+        #     pass
+        # print('histogram', min(h), max(h))
         if ignore_zeros:
             h = h[h > 0]
         self.imv.setLevels(min(h), max(h))
