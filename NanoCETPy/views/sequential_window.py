@@ -4,6 +4,7 @@
     
 """
 import os
+from pathlib import Path
 import time
 
 from PyQt5 import uic, QtGui
@@ -250,6 +251,7 @@ class PreferencesWidget(QWidget, BaseView):
 
     def apply(self):
         # handle config stuff and LEDs
+        Path(self.directory_line.text()).mkdir(parents=True, exist_ok=True)
         if not os.path.isdir(self.directory_line.text()):
             msg = QMessageBox(parent=self)
             msg.setText("Please enter a valid directory")

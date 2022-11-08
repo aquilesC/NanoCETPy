@@ -1,25 +1,16 @@
 """
     Experiment module for the entire usage sequence of the NanoCET 
 """
-# Is this is True, the focus and alignment algorithms will effectively be skipped:
-SKIP_ALIGNING = False  # Default: False
-# String pointing to h5 file to use as test data. Replace with something that returns False to skip
-USE_TEST_DATA = r'C:\Users\aron\NanoCET\2022-09-22\Waterfall_70nm_2.h5'  # Default: ''
-SKIP_FIRST_LINES_IN_TEST_DATA = 500
-
-# USE_TEST_DATA = r'C:\Users\aron\NanoCET\2022-09-22\Waterfall_70nm_3.h5'  # Default: ''
-# SKIP_FIRST_LINES_IN_TEST_DATA = 0
-USE_TEST_DATA = False
-
 import os
 import time
 from datetime import datetime
 from multiprocessing import Event
-
+from pathlib import Path
+from h5py import File
 import numpy as np
 import yaml
 from scipy import optimize, ndimage
-from skimage import data
+# from skimage import data
 
 from experimentor import Q_
 from experimentor.models.action import Action
@@ -29,25 +20,39 @@ from NanoCETPy.models import model_utils as ut
 from NanoCETPy.models.arduino import ArduinoNanoCET
 from NanoCETPy.models.basler import BaslerNanoCET as Camera
 from NanoCETPy.models.movie_saver import WaterfallSaver
-
+import NanoCETPy
 
 class MainSetup(Experiment):
-    """ This is a Experiment subclass to control the NanoCET in a sequential experiment consisting of focusing, alignment, and recording a waterfall
-
-    :param str filename: yml file containing the configuration settings for the experiment
-
-    >>> # First the experiment is instantiated with the corresponding filename
-    >>> experiment = MainSetup('config.yml')
-    >>> # Or 
-    >>> experiment = MainSetup()
-    >>> experiment.load_configuration('config.yml', yaml.UnsafeLoader)
-
-    >>> # Then the experiment is initialized to load the connected device classes
-    >>> experiment.initialize()
     """
-    def __init__(self, filename=None):
-        super(MainSetup, self).__init__(filename=filename)
-        self.VERSION = '1.0'
+    The main class that runs the nanoCET, independent of graphical user interface (GUI).
+    Note that normally it's run with the GUI by passed an object of this class as an
+    argument to the NanoCETPy.views.sequential_window.SequentialMainWindow() class.
+
+    Typical way to call it:
+        experiment = NanoCETPy.models.experiment.MainSetup()
+        experiment.load_config('path-to-config-file')
+        experiment.initialize()
+        window = NanoCETPy.views.sequential_window.SequentialMainWindow(experiment)
+    Note
+
+    For debugging and demo-ing there are two optional arguments:
+    - The piezo moves during alignment can be disabled.
+    - The waterfall can be simulated by using pre-recorded data.
+
+    :param str simulate_waterfall: full path to the h5 data file to be used for simulating the waterfall
+    :param bool skip_aligning: when True, skips piezo moves during alignment procedure
+    """
+    def __init__(self, simulate_waterfall=None, skip_aligning=False):
+        """
+        """
+        super(MainSetup, self).__init__()
+        self.skip_aligning = skip_aligning
+        if isinstance(simulate_waterfall, str) and Path(simulate_waterfall).is_file() and simulate_waterfall[-3:] == '.h5':
+            self.simulate_waterfall = simulate_waterfall
+            self.logger.info(f'Running with simulated waterfall from file: {self.simulate_waterfall}')
+        else:
+            self.simulate_waterfall = False
+        self.VERSION = NanoCETPy.__version__
         self.camera_fiber = None
         self.camera_microscope = None
         self.electronics = None
@@ -58,11 +63,11 @@ class MainSetup(Experiment):
         self.saving_process = None
         self.aligned = False
         
-        self.demo_image = data.colorwheel()
+        # self.demo_image = data.colorwheel()
         self.waterfall_image = np.array([[0,2**12-1],[0,2**8-1]])
         self.waterfall_image = np.zeros((2,2))
         self.waterfall_image_limits = [0, 1]
-        self.display_image = self.demo_image
+        # self.display_image = self.demo_image
         self.active = True
         self.now = None
         self._trigger_camera_auto_range = False
@@ -191,20 +196,11 @@ class MainSetup(Experiment):
         self.saving_images = True
         self._trigger_camera_auto_range = False
 
-        if False: # TESTING
-            time.sleep(5)
-            self.aligned = True
-            self.toggle_live(self.camera_microscope)
-            self.set_laser_power(99)
-            self.update_camera(self.camera_microscope, self.config['defaults']['microscope_focusing']['high'])
-            return
-
         # Set camera mode
         self.set_live(self.camera_fiber, False)
         self.set_live(self.camera_microscope, False)
         self.camera_fiber.acquisition_mode = self.camera_fiber.MODE_SINGLE_SHOT
         self.camera_microscope.acquisition_mode = self.camera_microscope.MODE_SINGLE_SHOT
-        # Set exposure and gain
 
         # Turn on Laser
         # self.electronics.fiber_led = 0
@@ -213,7 +209,7 @@ class MainSetup(Experiment):
         self.electronics.scattering_laser = 0
 
         # Step 1: Check if the (unfocused) fiber facet is the expected location. (using the fiber LED)
-        if not self.validate_initial_fiber_position():
+        if not self.skip_aligning and not self.validate_initial_fiber_position():
             self.logger.warning('Check cartridge position')
             self.aligned = 'check cartridge'  # This will signal to the GUI to show a pop-up
             return
@@ -224,7 +220,7 @@ class MainSetup(Experiment):
         self.set_laser_power(laser_focussing_power)
         if not self.find_focus():
             self.logger.warning('Laser not focused. Trying again...')
-            if not self.find_focus():
+            if not self.find_focus() and not self.skip_aligning:
                 self.logger.warning('Laser not focused.')
                 self.aligned = 'bad focus'
                 self.set_laser_power(0)
@@ -262,7 +258,7 @@ class MainSetup(Experiment):
         self.update_camera(self.camera_microscope, self.config['defaults']['microscope_focusing']['high'])
         time.sleep(.1)
         self._trigger_camera_auto_range = True  # When
-        if not self.align_laser_fine():
+        if not self.align_laser_fine() and not self.skip_aligning:
             self.logger.warning('Low scattering detected')
             self.aligned = 'low scattering'  # This will signal to the GUI to show a pop-up
             return
@@ -270,7 +266,7 @@ class MainSetup(Experiment):
         self.set_live(self.camera_microscope, True)
         self.aligned = True
 
-        self.logger.info('TEST Alignment done')
+        self.logger.info('Alignment done')
 
     def validate_initial_fiber_position(self):
         """
@@ -366,7 +362,7 @@ class MainSetup(Experiment):
         self.camera_fiber.trigger_camera()
         img = self.camera_fiber.read_camera()[-1]
 
-        if SKIP_ALIGNING:
+        if self.skip_aligning:
             self.img_find_focus = img
             return
 
@@ -412,7 +408,7 @@ class MainSetup(Experiment):
         
         .. todo:: consider more suitable ways to accurately detect laser beam center
         """
-        if SKIP_ALIGNING:
+        if self.skip_aligning:
             self.camera_fiber.trigger_camera()
             self.img_align_laser_course = self.camera_fiber.read_camera()[-1]
             return
@@ -490,7 +486,7 @@ class MainSetup(Experiment):
     #         median = np.median(img, axis=0)
     #         val_new = np.max(median)/np.min(median)
     #         axis = self.config['electronics']['vertical_axis']
-    #         while self.active and not SKIP_ALIGNING:
+    #         while self.active and not self.skip_aligning:
     #             val_old = val_new
     #             self.electronics.move_piezo(1, direction, axis)
     #             time.sleep(.1)
@@ -606,7 +602,7 @@ class MainSetup(Experiment):
         #     # self.logger.info(f'Figure of merit: {figure}')
         #     return img, figure
 
-        if SKIP_ALIGNING:
+        if self.skip_aligning:
             self.img_align_laser_fine, _ = figure_of_merit()
             return True
 
@@ -665,7 +661,7 @@ class MainSetup(Experiment):
             time.sleep(.1)
         self.logger.info(f'TEST imgshape {img.shape}')
 
-        if SKIP_ALIGNING:
+        if self.skip_aligning:
             width = self.config['defaults']['core_width']
             roi = self.camera_microscope.ROI
             new_roi = (roi[0], (roi[1][0] + (roi[1][1] - width) // 2, width))
@@ -737,46 +733,56 @@ class MainSetup(Experiment):
         img = self.camera_microscope.temp_image
 
         smooth = lambda line: line[1:-1:2] * 2 + line[:-2:2] + line[2::2]
+        # a local function that returns an array half the length of the input and where each value is averaged with its direct neighbors (0.25, 0.5, 0.25)
 
-        if USE_TEST_DATA:
-            import h5py
-            f = h5py.File(USE_TEST_DATA, 'r')
+        if self.simulate_waterfall:
+            f = File(self.simulate_waterfall, 'r')
             meta = yaml.safe_load(f['data']['metadata'][()].decode())
             frames = meta['frames']
             increment = int(max(1, self.config['GUI']['refresh_time'] / Q_(meta['exposure']).m_as('ms')))
             print(self.config['GUI']['refresh_time'], Q_(meta['exposure']).m_as('ms'), increment)
-            i = SKIP_FIRST_LINES_IN_TEST_DATA
-            img = f['data']['timelapse'][:, :3]
 
         # img.shape[0]
         self.waterfall_image = np.zeros((len(smooth(img[:, 1])), self.config['GUI']['length_waterfall']))#, dtype=np.int32)
         # median = np.zeros((img.shape[0],))
-        N_median = 10
-        buffer = np.tile(img[:, [0]], (1, N_median))
-        avg_median = np.median(buffer, axis=1)
+        N_median = 10  # The number of lines in recent history over which to calculate the median
+        buffer = np.tile(img[:, [0]], (1, N_median))  # initialize it with some values
+        avg_median = np.median(buffer, axis=1)  # initialize it with a start value
         div = np.ones_like(avg_median)
         # avg_std = avg_median/10
         buffer_index = 0
         # self.reset_waterfall()
         refresh_time_s = self.config['GUI']['refresh_time'] / 1000
 
-
+        i = 0
         while self.active:
             img = self.camera_microscope.temp_image
             new_slice = np.sum(img, axis=1)
-            if USE_TEST_DATA:
+            if self.simulate_waterfall:
+                length = new_slice.shape[0]
                 new_slice = f['data']['timelapse'][:, i]
+                length_prerecorded = new_slice.shape[0]
+                if length_prerecorded > length:
+                    new_slice = new_slice[:length]
+                elif length_prerecorded < length:
+                    new_slice = np.vstack((new_slice, new_slice[-1]*np.ones(length-length_prerecorded, 1)))
                 i = (i + increment) % frames
+
 
             curr_median = np.median(buffer, axis=1)
             # avg_std = (avg_std * 3 + np.std(buffer, axis=1))/4
-            avg_median = (avg_median * 1 + curr_median) / 2
+            avg_median = (avg_median * 1 + curr_median) / 2  # keep a bit history of the previous medians
+            # A buffer that holds the last N_median lines. The index rotates in order to overwrite the oldest line
             buffer[:, buffer_index] = new_slice
             buffer_index = (buffer_index + 1) % N_median
 
             self.waterfall_image = np.roll(self.waterfall_image, shift=-1, axis=1)
-            div = (div + np.maximum(0.5, np.sqrt(avg_median / np.median(avg_median))))/2
-            new_line = (new_slice - avg_median) / div  # np.sqrt(np.maximum(avg_median, 1.0))  # np.sqrt(1+avg_std)
+            # # I was experimenting with the following, which gave decent visual results at some point.
+            # # But it seems to result in an error now (with empty camera image) and it's a bit obscure.
+            # # So I disabled the division and limit to only subtracting by the median
+            # div = (div + np.maximum(0.5, np.sqrt(avg_median / np.median(avg_median))))/2
+            # new_line = (new_slice - avg_median) / div  # np.sqrt(np.maximum(avg_median, 1.0))  # np.sqrt(1+avg_std)
+            new_line = (new_slice - avg_median)
             self.waterfall_image[:, -1] = smooth(new_line)#[::2] + new_line[1::2]  # bin in horizontal direction in 2 pixels
 
             _min, _max = self.waterfall_image[:, -20:].min(), self.waterfall_image[:, -20:].max()
@@ -786,7 +792,7 @@ class MainSetup(Experiment):
             time.sleep(refresh_time_s - time.time() % refresh_time_s)
 
         self.stop_saving_images()
-        if USE_TEST_DATA:
+        if self.simulate_waterfall:
             f.close()
         
     def start_saving_images(self):
@@ -887,22 +893,20 @@ class MainSetup(Experiment):
     def get_waterfall_image(self):
         return self.waterfall_image
 
-    def load_configuration(self, *args, **kwargs):
-        super().load_configuration(*args, **kwargs)
-        # To allow the use of environmental variables like %HOMEPATH%
-        folder = self.config['info']['files']['folder']
-        for key, val in os.environ.items():
-            folder = folder.replace('%'+key+'%', val)
-        self.config['info']['files']['folder'] = os.path.abspath(folder)
+    # def load_configuration(self, *args, **kwargs):
+    def load_configuration(self, filename):
+        super().load_configuration(filename, yaml.UnsafeLoader)
+        # Insert a path for datafolder if it was not present (which happens when cloning the default config)
+        if self.config['info']['files'].get('folder', None) is None:
+            self.config['info']['files']['folder'] = str(Path.home() / 'nanoCETdata')
 
     def prepare_folder(self) -> str:
         """Creates the folder with the proper date, using the base directory given in the config file"""
         base_folder = self.config['info']['files']['folder']
         today_folder = f'{datetime.today():%Y-%m-%d}'
-        folder = os.path.join(base_folder, today_folder)
-        if not os.path.isdir(folder):
-            os.makedirs(folder)
-        return folder
+        folder = Path(base_folder) / today_folder
+        folder.mkdir(parents=True, exist_ok=True)
+        return str(folder)
 
     def get_filename(self, base_filename: str) -> str:
         """Checks if the given filename exists in the given folder and increments a counter until the first non-used
@@ -931,7 +935,8 @@ class MainSetup(Experiment):
             self.stop_saving_images()
         self.saving_event.set()
 
-        with open('config_user.yml', 'w') as f:
+        Path(NanoCETPy.USER_CONFIG_PATH).parent.mkdir(parents=True, exist_ok=True)
+        with open(NanoCETPy.USER_CONFIG_PATH, 'w') as f:
             yaml.dump(self.config, f, default_flow_style=False)
 
         if self.camera_microscope:
@@ -944,10 +949,9 @@ class MainSetup(Experiment):
         self.finalized = True
 
 if __name__ == '__main__':
-    from NanoCETPy import BASE_PATH
     self = MainSetup()
-    if not (config_filepath := BASE_PATH / 'config_user.yml').is_file():
-        config_filepath = BASE_PATH / 'resources/config_default.yml'
+    if not (config_filepath := NanoCETPy.USER_CONFIG_PATH / 'config_user.yml').is_file():
+        config_filepath = NanoCETPy.BASE_PATH / 'resources/config_default.yml'
     self.load_configuration(config_filepath, yaml.UnsafeLoader)
     self.initialize()
     self.validate_initial_fiber_position()

@@ -23,30 +23,45 @@
 """
 import os
 import sys
-
 import yaml
 from PyQt5 import QtGui
 from PyQt5.QtWidgets import QApplication
-
 from experimentor.lib.log import get_logger, log_to_screen
-from NanoCETPy.models.demo import DemoExperiment
 from NanoCETPy.models.experiment import MainSetup
 from NanoCETPy.views.sequential_window import SequentialMainWindow
-
-from NanoCETPy import BASE_PATH
-
+from NanoCETPy import BASE_PATH, USER_CONFIG_PATH
 
 
-def main():
+def main(**kwargs):
+    """
+    Standard entry point to run the nanoCET software. Can be called from command line.
+    If the user config file doesn't exist, the built-in default config will be used (and
+    the user config will be generated when the software is closed).
+
+    When called as a function, keyword arguments will be passed to the MainSetup class.
+    When called from command line, keyword arguments can be passed as key=value
+    Example:    python start.py skip_aligning=True simulate_waterfall=C:\\Temp\\my_data.h5
+
+    Special command line argument is reset-config, which will delete the existing
+    user config file and load the default config.
+    Example:    python start.py reset-config
+    """
     logger = get_logger()
     log_to_screen(logger=logger)
-    if len(sys.argv) > 1 and sys.argv[1] == 'demo':
-        experiment = DemoExperiment()
-    else:
-        experiment = MainSetup()
-    if not (config_filepath := BASE_PATH / 'config_user.yml').is_file():
+    config_filepath = USER_CONFIG_PATH
+    if 'reset-config' in sys.argv[1:] and config_filepath.exists():
+        config_filepath.unlink()
+    if not config_filepath.is_file():
         config_filepath = BASE_PATH / 'resources/config_default.yml'
-    experiment.load_configuration(config_filepath, yaml.UnsafeLoader)
+    if not kwargs:
+        for arg in sys.argv[1:]:
+            if '=' in arg:
+                value = '='.join(arg.split('=')[1:]).strip('\'\"')
+                value = False if value.lower() in ('0', 'false') else value
+                value = True if value.lower() in ('1', 'true') else value
+                kwargs[arg.split('=')[0]] = value
+    experiment = MainSetup(**kwargs)
+    experiment.load_configuration(config_filepath)
 
     # QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
     # QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
@@ -60,7 +75,7 @@ def main():
     main_window.show()
     app.exec()
     experiment.finalize()
-    return experiment
+    return experiment  # return the experiment object for debugging
 
 
 if __name__ == '__main__':
