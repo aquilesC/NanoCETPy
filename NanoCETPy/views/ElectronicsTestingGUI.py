@@ -1,13 +1,16 @@
 USE_FIBER_CAMERA = False
 
 import sys
-from NanoCETPy.models import Q_, MainSetup, ArduinoNanoCET, Camera
+from NanoCETPy.models.arduino import ArduinoNanoCET
+from NanoCETPy.models.basler import BaslerCamera as Camera
+from NanoCETPy.models.experiment import MainSetup
+from experimentor import Q_
+import time
+from scipy import ndimage
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtWidgets import (QApplication, QGridLayout, QHBoxLayout, QGroupBox, QSpinBox,
                              QPushButton, QWidget, QSlider)
-import time
 
-from scipy import ndimage
 
 # class LedSlider(QSlider):
 #     def __init__(self, arduino, name, arduino_command, states=('off', 'on', 'blink'), *args, **kwargs):
@@ -139,6 +142,7 @@ class Window(QWidget):
 
     def connect_camera_fiber(self):
         self.camera_fiber.initialize()
+        time.sleep(1)
         self.camera_fiber.start_free_run()
         self.camera_fiber.continuous_reads()
         self.timer_fiber = QTimer()
@@ -341,5 +345,5 @@ if __name__ == '__main__':
         camera_fiber = None
 
     app = QApplication(sys.argv)
-    window = Window(arduino, camera_fiber, plot_func=MainSetup.focus_merit)
+    window = Window(arduino, camera_fiber, plot_func=MainSetup.focus_optimization_function)
     app.exec()

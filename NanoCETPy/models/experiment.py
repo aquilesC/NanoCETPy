@@ -1,6 +1,7 @@
 """
     Experiment module for the entire usage sequence of the NanoCET 
 """
+import logging
 import os
 import time
 from datetime import datetime
@@ -10,10 +11,9 @@ from h5py import File
 import numpy as np
 import yaml
 from scipy import optimize, ndimage
-# from skimage import data
-
 from experimentor import Q_
 from experimentor.models.action import Action
+from experimentor.lib.log import get_logger
 from experimentor.models.decorators import make_async_thread
 from experimentor.models.experiments import Experiment
 from NanoCETPy.models import model_utils as ut
@@ -21,6 +21,7 @@ from NanoCETPy.models.arduino import ArduinoNanoCET
 from NanoCETPy.models.basler import BaslerNanoCET as Camera
 from NanoCETPy.models.movie_saver import WaterfallSaver
 import NanoCETPy
+
 
 class MainSetup(Experiment):
     """
@@ -42,16 +43,14 @@ class MainSetup(Experiment):
     :param str simulate_waterfall: full path to the h5 data file to be used for simulating the waterfall
     :param bool skip_aligning: when True, skips piezo moves during alignment procedure
     """
-    def __init__(self, simulate_waterfall=None, skip_aligning=False):
-        """
-        """
+    def __init__(self, simulate_waterfall='', skip_aligning=False):
         super(MainSetup, self).__init__()
         self.skip_aligning = skip_aligning
-        if isinstance(simulate_waterfall, str) and Path(simulate_waterfall).is_file() and simulate_waterfall[-3:] == '.h5':
-            self.simulate_waterfall = simulate_waterfall
-            self.logger.info(f'Running with simulated waterfall from file: {self.simulate_waterfall}')
+        self.simulate_waterfall_path = Path(simulate_waterfall)
+        if self.simulate_waterfall_path.is_file() and self.simulate_waterfall_path.suffix == '.h5':
+            self.logger.info(f'Running with simulated waterfall from file: {self.simulate_waterfall_path}')
         else:
-            self.simulate_waterfall = False
+            self.simulate_waterfall_path = ''  # Note that this will evaluate as False
         self.VERSION = NanoCETPy.__version__
         self.camera_fiber = None
         self.camera_microscope = None
@@ -62,27 +61,19 @@ class MainSetup(Experiment):
         self.saving = False
         self.saving_process = None
         self.aligned = False
-        
-        # self.demo_image = data.colorwheel()
-        self.waterfall_image = np.array([[0,2**12-1],[0,2**8-1]])
         self.waterfall_image = np.zeros((2,2))
         self.waterfall_image_limits = [0, 1]
-        # self.display_image = self.demo_image
         self.active = True
         self.now = None
         self._trigger_camera_auto_range = False
 
     @Action
     def initialize(self):
-        """ Initializes the cameras and Arduino objects. 
-        Runs in a loop until every device is connected and initialized.
-
-        :return: None
         """
-        #self.initialize_cameras()
-        #self.initialize_electronics()
-
-        #Instantiate Camera and Arduino objects
+        Initializes the cameras and Arduino objects.
+        Runs in a loop until every device is connected and initialized.
+        A timeout can be set in the config.
+        """
         self.logger.info('Instantiating Cameras and Arduino')
         config_fiber = self.config['camera_fiber']
         self.camera_fiber = Camera(config_fiber['init'], initial_config=config_fiber['config'])
@@ -94,12 +85,10 @@ class MainSetup(Experiment):
         except:
             devices_loading_timeout = 30
             self.logger.info(f'default/devices_loading_timeout parameter not found in config: using {devices_loading_timeout}s')
-
         #Loop over instances until all are initialized
         t0 = time.time()
         loading_timed_out = False
         while self.active and not loading_timed_out:
-            #self.logger.info('TEST init loop')
             initialized = [self.camera_fiber.initialized, self.camera_microscope.initialized, self.electronics.initialized]
             if all(initialized): return
             if not initialized[0]: 
@@ -125,37 +114,44 @@ class MainSetup(Experiment):
             return
         self.logger.info('TEST init loop exit')
 
-
-    def focus_start(self):
+    def live_microscope_view(self):
         """
-        Live view for manual focussing of microscope.
+        Enables live view for manual focussing of microscope.
+        - sets laser power to 0
+        - turns on top LED
+        - sets ROI from config for both cameras
+        - stops live view of fiber camera
+        - enables live view of microscope camera
         """
         self.electronics.scattering_laser = 0
         self.electronics.top_led = 1
         self.set_live(self.camera_microscope, False)
         self.set_live(self.camera_fiber, False)
-        while self.camera_microscope.free_run_running: time.sleep(.1)
+        while self.camera_microscope.free_run_running:
+            time.sleep(.1)
         time.sleep(.1)
-        # self.camera_fiber.clear_ROI()
-        # self.camera_microscope.clear_ROI()
         self.camera_fiber.ROI = self.config['camera_fiber']['config']['ROI']
         self.camera_microscope.ROI = self.config['camera_microscope']['config']['ROI']
         self.set_live(self.camera_microscope, True)
         self.update_camera(self.camera_microscope, self.config['defaults']['microscope_focusing']['low'])
         self.aligned = False
 
-    def focus_stop(self):
+    def stop_microscope_view(self):
+        """
+        Disables live view of the microscope camera. And turns off the top LED.
+        """
         self.set_live(self.camera_microscope, False)
         self.electronics.top_led = 0
         self.img_focus_microscope = self.camera_microscope.temp_image.copy()
 
-
-    def identify_fiber_core_in_microscope(self, img):
+    def identify_fiber_core_in_microscope(self, img) -> int:
         """
         Tries to find the fiber core in a microscope image.
         If it fails, it will return a value near the middle.
 
-        returns (int) center pixel index
+        :param np.ndarray img: camera image
+        :return: center pixel index
+        :rtype: int
         """
         cross_cut = np.median(img, axis=0)
         cross_cut = np.convolve(cross_cut, [0.25, 0.5, 0.25], 'same')  # smooth a bit
@@ -179,18 +175,19 @@ class MainSetup(Experiment):
             self.logger.info(f"Couldn't find fiber, center_estimate = {center_estimate}")
         center_fit = int(center_estimate) - 9 + 3 + np.argmin(np.convolve(cross_cut[int(center_estimate) - 9: int(center_estimate) + 10], np.ones(7) / 7, 'valid'))
         self.logger.info(f'Center by local minimum = {center_fit}')
-        center = np.ceil((center_estimate + center_fit * 2) / 3)
+        center = np.ceil((center_estimate * 1 + center_fit * 2) / 3)  # take a weighted average of the two estimates of the center
         self.logger.info(f'Core identified at {center}')
-        return center
+        return int(center)
+
 
     @make_async_thread
     def start_alignment(self):
-        """ Wraps the whole alignment procedure from focussing to aligning.
-        Run in an async thread as it calls other Actions
-        
-        :return: None
         """
-        self.logger.info('TEST Starting Laser Alignment')
+        Wraps the whole alignment procedure from focussing to aligning.
+        Run in an async thread as it calls other Actions.
+        Note this method will be called by the GUI.
+        """
+        self.logger.info('Starting Laser Alignment')
         self.active = True
         self.now = datetime.now()
         self.saving_images = True
@@ -216,15 +213,15 @@ class MainSetup(Experiment):
 
         # Step 2: Find the piezo Z position where the laser spot is focused on the fiber facet.
         self.update_camera(self.camera_fiber, self.config['defaults']['laser_focusing']['low'])
-        laser_focussing_power = self.config['defaults']['laser_focusing'].get('laser_power', 3)  # Get power for laser focussing from config, use 3 if it's not present
+        laser_focussing_power = self.config['defaults']['laser_focusing'].setdefault('laser_power', 3.66)  # Get power for laser focussing from config, use 3 if it's not present
         self.set_laser_power(laser_focussing_power)
-        if not self.find_focus():
-            self.logger.warning('Laser not focused. Trying again...')
-            if not self.find_focus() and not self.skip_aligning:
-                self.logger.warning('Laser not focused.')
-                self.aligned = 'bad focus'
-                self.set_laser_power(0)
-                return
+        time.sleep(0.2)
+        self.logger.info(f'laser={self.electronics.scattering_laser}, exposure={self.camera_fiber.exposure}, gain={self.camera_fiber.gain}')
+        if not self.focus_laser_on_fiber_facet() and not self.skip_aligning:
+            self.logger.warning('Laser not focused.')
+            self.aligned = 'bad focus'
+            self.set_laser_power(0)
+            return
         self.set_laser_power(0)
 
         # Step 3: Identify the center of the fiber. (using the fiber LED)
@@ -268,14 +265,17 @@ class MainSetup(Experiment):
 
         self.logger.info('Alignment done')
 
+
     def validate_initial_fiber_position(self):
         """
         Check if the (unfocused) fiber facet is the expected location.
         Determines the center of mass of the unfocused fiber facet (with the fiber LED).
         The expected location can be retrieved from config, or from arduino (if it's not in the config).
         The tolerance is retrieved from config (or a default of 50 is used).
+        Note, this method is called by start_alignment (step 1).
 
-        return: (bool) True if distance between center of (unfocused) fiber and the expected location is less than the tolerance.
+        :return: True if distance between center of (unfocused) fiber and the expected location is less than the tolerance.
+        :rtype: bool
         """
         time.sleep(0.01)
         self.electronics.fiber_led = 1
@@ -286,8 +286,7 @@ class MainSetup(Experiment):
         time.sleep(0.01)
         self.camera_fiber.trigger_camera()
         img = self.camera_fiber.read_camera()[-1]
-
-        cm = ndimage.measurements.center_of_mass(img**2)
+        cm = ndimage.measurements.center_of_mass(img**2)  # coordinates of the center of the blob
         self.logger.info(f"Fiber center of mass at {cm}")
         dist = ((cm[0]-core_y)**2 + (cm[1]-core_x)**2)**0.5
         tolerance = self.config['defaults'].get('core_position_tolerance', 50)
@@ -297,10 +296,14 @@ class MainSetup(Experiment):
         return dist < tolerance
 
     @staticmethod
-    def focus_merit(img, core_x, core_y, tolerance, half_size=125):
+    def focus_optimization_function(img):#, core_x, core_y, tolerance, half_size=125):
         """
-        A helper function that calculates a figure of merit for how well the laser is in focus on the fiber facet.
-        return : (int) The value to be maximized
+        A helper function that determines the focus quality. It returns a higher value for a better focus.
+        Used (and optimized) by focus_laser_on_fiber_facet().
+
+        :param np.ndarray img: camera image
+        :return: arbitrarily scaled value that indicates quality of focus
+        :rtype: int
         """
         dark = img.min()
         mx = img.max()
@@ -314,8 +317,15 @@ class MainSetup(Experiment):
     # @staticmethod
     # def focus_merit(img, core_x, core_y, tolerance, half_size=125):
     #     """
-    #     A helper function that calculates a figure of merit for how well the laser is in focus on the fiber facet.
-    #     return : (int) The value to be maximized
+    #     A helper function that determines the focus quality. It returns a higher value for a better focus.
+    #     Used (and optimized) by focus_laser_on_fiber_facet().
+    #
+    #     :param int core_x: center x-coordinate of region of interest within the image
+    #     :param int core_y: center y-coordinate of region of interest within the image
+    #     :param int tolerance: tolerance
+    #     :param int half_size: half the width and height of the region of interest within the image
+    #     :return: arbitrarily scaled value that indicates quality of focus
+    #     :rtype: int
     #     """
     #     # Note that the fiber facet is roughly 250 x 250 pixels large
     #
@@ -347,15 +357,18 @@ class MainSetup(Experiment):
     #     # print(dark, bright, fom, fom2)
     #     return fom2
 
-    def find_focus(self):
+    def focus_laser_on_fiber_facet(self):
         """
-        The procedure above has some drawbacks/risks.
+        Moves the Z-piezo to focus the laser.
+        Note, this method is called by start_alignment (step 2).
+
         The camera will usually saturate, so looking for the brightest spots won't be reliable.
         Other things to look for could be the smallest saturated spot:
         - The number of saturated pixels is very small
         - The number of black pixels is very high
 
-        :return: None
+        :return: True if the quality exceeds the threshold.
+        :rtype: bool
         """
         speeds = [2, 3, 5, 8, 13, 21, 35, 58]  # will be used in reverse order
         # speeds = [3, 5, 7, 10, 15, 23, 34, 51]  # will be used in reverse order
@@ -372,7 +385,7 @@ class MainSetup(Experiment):
         core_x, core_y = self.config['defaults'].get('core_position', self.electronics.factory_cam)
         tolerance = self.config['defaults'].get('core_position_tolerance', 50)
 
-        current = MainSetup.focus_merit(img, core_x, core_y, tolerance)
+        current = MainSetup.focus_optimization_function(img) #, core_x, core_y, tolerance)
         direction = len(speeds) % 2
         speed = speeds.pop()
         while self.active:
@@ -382,8 +395,8 @@ class MainSetup(Experiment):
             time.sleep(.05)
             self.camera_fiber.trigger_camera()
             img = self.camera_fiber.read_camera()[-1]
-            current = MainSetup.focus_merit(img, core_x, core_y, tolerance)
-            print(current)
+            current = MainSetup.focus_optimization_function(img) #, core_x, core_y, tolerance)
+            self.logger.info(F'FOCUSING QUALITY: {current}')
             if current < previous:
                 if not speeds:
                     break
@@ -393,19 +406,17 @@ class MainSetup(Experiment):
         self.img_find_focus = img
 
         self.img_align_laser_course = img
-        threshold = self.config['defaults'].get('alignment', {}).get('focus_threshold', 310e6)
+        threshold = int(self.config['defaults'].get('alignment', {}).get('focus_threshold', 310e6))
         self.logger.info(f'Focus value = {current}. Threshold = {threshold}')
         return current > threshold
-
 
     def align_laser_coarse(self, fiber_center):
         """
         Aligns the focussed laser beam to the previously detected center of the fiber.
+        Note, this method is called by start_alignment (step 3).
         
         :param fiber_center: coordinates of the center of the fiber 
         :type fiber_center: array or tuple of shape (2,)
-        :returns: None
-        
         .. todo:: consider more suitable ways to accurately detect laser beam center
         """
         if self.skip_aligning:
@@ -507,11 +518,11 @@ class MainSetup(Experiment):
     def align_laser_fine(self):
         """
         Optimize laser spot position by looking at scattered light in fiber with the microscope camera.
+        Note, this method is called by start_alignment (step 5).
 
         Iterate both axes multiple times, always finishing piezo motion in positive direction.
         Because the piezo steps are very large, don't use a drop in intensity as the moment to stop, but the expected
         maximum encountered on a previous sweep.
-
         """
         def figure_of_merit():
             """Local helper function that calculates a figure of merit to be optimized"""
@@ -626,7 +637,7 @@ class MainSetup(Experiment):
                         self.electronics.move_piezo(1, direction, axis)
                         steps_taken[axis][direction] += 1
                         img, current = figure_of_merit()
-                        print(current)
+                        self.logger.info(f'ALIGNMENT QUALITY: {current}')
                         highest_values[-1] = max(highest_values[-1], current)
                         # On the last sweep in "positive" direction, exit loop also if figure of merit reaches 99% of the maximum
                         # found so far. (This is to reduce the chance of stepping over the optimum)
@@ -659,7 +670,7 @@ class MainSetup(Experiment):
         self.set_live(self.camera_microscope, False)
         while self.camera_microscope.continuous_reads_running:
             time.sleep(.1)
-        self.logger.info(f'TEST imgshape {img.shape}')
+        self.logger.debug(f'TEST imgshape {img.shape}')
 
         if self.skip_aligning:
             width = self.config['defaults']['core_width']
@@ -735,12 +746,13 @@ class MainSetup(Experiment):
         smooth = lambda line: line[1:-1:2] * 2 + line[:-2:2] + line[2::2]
         # a local function that returns an array half the length of the input and where each value is averaged with its direct neighbors (0.25, 0.5, 0.25)
 
-        if self.simulate_waterfall:
-            f = File(self.simulate_waterfall, 'r')
+        if self.simulate_waterfall_path:
+            f = File(self.simulate_waterfall_path, 'r')
             meta = yaml.safe_load(f['data']['metadata'][()].decode())
             frames = meta['frames']
+            i = 0
             increment = int(max(1, self.config['GUI']['refresh_time'] / Q_(meta['exposure']).m_as('ms')))
-            print(self.config['GUI']['refresh_time'], Q_(meta['exposure']).m_as('ms'), increment)
+            # print(self.config['GUI']['refresh_time'], Q_(meta['exposure']).m_as('ms'), increment)
 
         # img.shape[0]
         self.waterfall_image = np.zeros((len(smooth(img[:, 1])), self.config['GUI']['length_waterfall']))#, dtype=np.int32)
@@ -754,11 +766,10 @@ class MainSetup(Experiment):
         # self.reset_waterfall()
         refresh_time_s = self.config['GUI']['refresh_time'] / 1000
 
-        i = 0
         while self.active:
             img = self.camera_microscope.temp_image
             new_slice = np.sum(img, axis=1)
-            if self.simulate_waterfall:
+            if self.simulate_waterfall_path:
                 length = new_slice.shape[0]
                 new_slice = f['data']['timelapse'][:, i]
                 length_prerecorded = new_slice.shape[0]
@@ -767,7 +778,6 @@ class MainSetup(Experiment):
                 elif length_prerecorded < length:
                     new_slice = np.vstack((new_slice, new_slice[-1]*np.ones(length-length_prerecorded, 1)))
                 i = (i + increment) % frames
-
 
             curr_median = np.median(buffer, axis=1)
             # avg_std = (avg_std * 3 + np.std(buffer, axis=1))/4
@@ -792,7 +802,7 @@ class MainSetup(Experiment):
             time.sleep(refresh_time_s - time.time() % refresh_time_s)
 
         self.stop_saving_images()
-        if self.simulate_waterfall:
+        if self.simulate_waterfall_path:
             f.close()
         
     def start_saving_images(self):
@@ -805,6 +815,7 @@ class MainSetup(Experiment):
         self.saving = True
         base_filename = self.config['info']['files']['filename']
         file = self.get_filename(base_filename)
+
         self.saving_event.clear()
         if self.saving_images:
             alignment_images = {'focus_microscope': self.img_focus_microscope,
@@ -814,6 +825,7 @@ class MainSetup(Experiment):
                                 'scattering_optimization': self.img_align_laser_fine}
         else:
             alignment_images = {}
+        self.logger.info("Creating WaterfallSaver process")
         self.saving_process = WaterfallSaver(
             file,
             self.config['info']['files']['max_memory'],
@@ -823,8 +835,9 @@ class MainSetup(Experiment):
             topic='new_image',
             alignment_images=alignment_images,
             metadata=self.camera_microscope.config.all(),
-            versions = {'software_version': self.VERSION, 'firmware_version': self.electronics.driver.query('IDN')}
+            versions={'software_version': self.VERSION, 'firmware_version': self.electronics.driver.query('IDN').strip()}
         )
+        self.logger.info("WaterfallSaver process created")
 
     def stop_saving_images(self):
         self.camera_microscope.new_image.emit('stop')
@@ -878,11 +891,11 @@ class MainSetup(Experiment):
         })
         camera.config.apply_all()
 
-    def set_laser_power(self, power: int):
+    def set_laser_power(self, power: float):
         """ Sets the laser power, taking into account closing the shutter if the power is 0
         """
         self.logger.info(f'Setting laser power to {power}')
-        power = int(power)
+        power = float(power)
 
         self.electronics.scattering_laser = power
         self.config['electronics']['laser']['power'] = power
@@ -902,6 +915,7 @@ class MainSetup(Experiment):
 
     def prepare_folder(self) -> str:
         """Creates the folder with the proper date, using the base directory given in the config file"""
+        self.logger.info('Preparing data folder')
         base_folder = self.config['info']['files']['folder']
         today_folder = f'{datetime.today():%Y-%m-%d}'
         folder = Path(base_folder) / today_folder
@@ -925,6 +939,11 @@ class MainSetup(Experiment):
         return os.path.join(folder, base_filename.format(description=description, i=i))
 
     def finalize(self):
+        """
+        Gets called when closing the software.
+        Closes
+        """
+
         if self.finalized:
            return
         self.logger.info('Finalizing calibration experiment')
@@ -949,9 +968,10 @@ class MainSetup(Experiment):
         self.finalized = True
 
 if __name__ == '__main__':
+
     self = MainSetup()
-    if not (config_filepath := NanoCETPy.USER_CONFIG_PATH / 'config_user.yml').is_file():
-        config_filepath = NanoCETPy.BASE_PATH / 'resources/config_default.yml'
-    self.load_configuration(config_filepath, yaml.UnsafeLoader)
+    if not (config_filepath := Path(NanoCETPy.USER_CONFIG_PATH)).is_file():
+        config_filepath = Path(NanoCETPy.BASE_PATH) / 'resources/config_default.yml'
+    self.load_configuration(config_filepath)
     self.initialize()
     self.validate_initial_fiber_position()

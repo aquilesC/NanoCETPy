@@ -11,6 +11,7 @@ from pyvisa import VisaIOError
 from experimentor.lib.log import get_logger
 from experimentor.models import Feature
 from experimentor.models.decorators import make_async_thread
+from numpy import round
 
 rm = pyvisa.ResourceManager('@py')
 
@@ -34,6 +35,7 @@ class ArduinoNanoCET(ModelDevice):
         super().__init__()
         self.logger = get_logger(__name__)
         self._threads = []
+        self._finalizing = False
         self._stop_temperature = Event()
         self.temp_electronics = 0
         self.temp_sample = 0
@@ -157,15 +159,16 @@ class ArduinoNanoCET(ModelDevice):
                 try:
                     self.driver.read()
                 except VisaIOError:
-                    print('another error')
+                    self.logger.warning('An unexpected VisaIOError occured')
                     pass
             self.config.fetch_all()
-            print(self.driver.query('INI'))
+            self.logger.debug(f"INI response: {self.driver.query('INI')}")
             if self.initial_config is not None:
                 self.config.update(self.initial_config)
                 self.config.apply_all()
             self.initialized = True
             # self.logger.info('TEST arduino init done')
+            time.sleep(0.05)
             self.retrieve_factory_values()
 
     @Feature()
@@ -174,18 +177,18 @@ class ArduinoNanoCET(ModelDevice):
 
         Parameters
         ----------
-        power : int
+        power : float
             Percentage of power (0-100)
         """
-        return self._scattering_laser_power
+        return round(self._scattering_laser_power * 100.0 / 4095.0, 2)
 
     @scattering_laser.setter
     def scattering_laser(self, power):
         with self.query_lock:
-            power = int(power * 4095 / 100)
+            power = int(round(power * 4095 / 100))
             self.driver.query(f'LASER:{power}')
             self.logger.info(f'LASER:{power}')
-            self._scattering_laser_power = int(power)
+            self._scattering_laser_power = power
 
     def move_piezo(self, speed, direction, axis):
         """ Moves the mirror connected to the board
@@ -292,18 +295,18 @@ class ArduinoNanoCET(ModelDevice):
             return self.driver.query(f'LID').strip()
 
     def finalize(self):
+        if self._finalizing:
+            self.logger.warning('Trying to finalize while already finalizing')
+            return
+        self._finalizing = True
         self.logger.info('Finalizing Arduino')
         if self.initial_config is not None:
             self.config.update(self.initial_config)
             self.config.apply_all()
-
         self.scattering_laser = 0
         self.fiber_led = 0
         self.top_led = 0
         self.state('standby')
-        self.clean_up_threads()
-        if len(self._threads):
-            self.logger.warning(f'There are {len(self._threads)} still alive in Arduino')
         self.driver.close()
         super().finalize()
 

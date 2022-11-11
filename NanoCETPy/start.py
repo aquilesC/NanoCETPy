@@ -23,36 +23,33 @@
 """
 import os
 import sys
-import yaml
 from PyQt5 import QtGui
 from PyQt5.QtWidgets import QApplication
 from experimentor.lib.log import get_logger, log_to_screen
 from NanoCETPy.models.experiment import MainSetup
 from NanoCETPy.views.sequential_window import SequentialMainWindow
 from NanoCETPy import BASE_PATH, USER_CONFIG_PATH
+import yaml
 
-
-def main(**kwargs):
+def main(*args, **kwargs):
     """
-    Standard entry point to run the nanoCET software. Can be called from command line.
-    If the user config file doesn't exist, the built-in default config will be used (and
-    the user config will be generated when the software is closed).
+    Standard entry point to run the nanoCET software.
+    It can be used as a function and also from command line.
+    This function is also called when running the nanocet command (from command line)
 
-    When called as a function, keyword arguments will be passed to the MainSetup class.
-    When called from command line, keyword arguments can be passed as key=value
-    Example:    python start.py skip_aligning=True simulate_waterfall=C:\\Temp\\my_data.h5
+    Possible arguments that can be passed are:
+    - 'reset-config'        This will delete the existing user config file and load the default config.
+    - 'return-debug'        This will return the experiment and main_window object for debugging purposes.
 
-    Special command line argument is reset-config, which will delete the existing
-    user config file and load the default config.
-    Example:    python start.py reset-config
+    Keyword arguments are passed to the experiment class. Current options are:
+    - simulate_waterfall    (str) Full path to the h5 data file to be used for simulating the waterfall.
+    - skip_aligning         (bool) When True, skips piezo moves during alignment procedure.
+
+    To pass keyword arguments from command line use, an equal sign between the key and the value.
+    Example:
+        nanocet skip_sligning=True
     """
-    logger = get_logger()
-    log_to_screen(logger=logger)
-    config_filepath = USER_CONFIG_PATH
-    if 'reset-config' in sys.argv[1:] and config_filepath.exists():
-        config_filepath.unlink()
-    if not config_filepath.is_file():
-        config_filepath = BASE_PATH / 'resources/config_default.yml'
+    args = list(args)
     if not kwargs:
         for arg in sys.argv[1:]:
             if '=' in arg:
@@ -60,6 +57,21 @@ def main(**kwargs):
                 value = False if value.lower() in ('0', 'false') else value
                 value = True if value.lower() in ('1', 'true') else value
                 kwargs[arg.split('=')[0]] = value
+            else:
+                args.append(arg)
+    config_filepath = USER_CONFIG_PATH
+    if 'reset-config' in args and config_filepath.exists():
+        config_filepath.unlink()
+    if not config_filepath.is_file():
+        config_filepath = BASE_PATH / 'resources/config_default.yml'
+
+    with open(config_filepath, 'r') as f:
+        config = yaml.unsafe_load(f)
+
+    logger = get_logger(name='nanoCET')
+    fmt = "[%(levelname)8s] %(asctime)s | %(filename)s:%(lineno)s:  %(message)s"  # Used during debugging
+    log_to_screen(logger=logger, fmt=fmt, level=config['defaults'].get('logging_level', 'WARNING'))
+
     experiment = MainSetup(**kwargs)
     experiment.load_configuration(config_filepath)
 
@@ -75,8 +87,10 @@ def main(**kwargs):
     main_window.show()
     app.exec()
     experiment.finalize()
-    return experiment  # return the experiment object for debugging
-
+    if 'return-debug' in args:
+        return experiment, main_window
+    else:
+        sys.exit()
 
 if __name__ == '__main__':
-    debug = main()
+    experiment, main_window = main('return-debug')

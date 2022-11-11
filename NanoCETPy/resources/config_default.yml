@@ -12,6 +12,11 @@ info:
     description: Test
     max_memory: 2500 # In megabytes
 
+measurement_settings:
+  laser_power: 99
+  exposure: 5ms
+  gain: 0.0
+
 GUI:
   length_waterfall: 492 # Total length of the Waterfall (lines)
   refresh_time: 50 # Refresh rate of the GUI (in ms)
@@ -63,13 +68,14 @@ camera_microscope:
     buffer_size: 2000MB
 
 defaults:
+  logging_level: 'WARNING'  # DEBUG, INFO, WARNING, ERROR
   devices_loading_timeout: 15s
   fiber_center: # fiber core on camera_fiber
   microscope_center: # fiber core on camera_microscope (a line)
-  roi_width: 100
+  roi_width: 99
   core_width: 20  # half-width of crop around fiber core on camera_microscope
   laser_focusing:
-    laser_power: 4
+    laser_power: 3.66
     high:
       exposure: 20ms # originally 100ms
       gain: 10.

@@ -4,6 +4,8 @@ Camera Viewer Widget
 Wrapper around PyQtGraph ImageView.
 
 """
+import time
+
 import numpy as np
 import pyqtgraph as pg
 from PyQt5.QtCore import pyqtSignal, QRect, Qt, QTimer
@@ -84,6 +86,12 @@ class CameraViewerWidget(DataViewWidget):
 
         self.add_actions_to_menu()
         self.setup_mouse_tracking()
+
+        # A timer to trigger a (single) delayed auto range event.
+        # Run as auto_range_timer.start(ms)
+        # Note that the timer is stopped by the auto range method (ensuring a single event)
+        self.auto_range_timer = QTimer()
+        self.auto_range_timer.timeout.connect(self.do_auto_range)
 
     def scene(self):
         """ Shortcut to getting the image scene"""
@@ -221,16 +229,19 @@ class CameraViewerWidget(DataViewWidget):
         """ Sets the levels of the image based on the maximum and minimum. This is useful when auto-levels are off
         (the default behavior), and one needs to quickly adapt the histogram.
         """
-
-        h, y = self.img.getHistogram()
-        # try:
-        #     print(self.last_image.min(), self.last_image.max())
-        # except:
-        #     pass
-        # print('histogram', min(h), max(h))
-        if ignore_zeros:
-            h = h[h > 0]
-        self.imv.setLevels(min(h), max(h))
+        try:
+            h, y = self.img.getHistogram()
+            # try:
+            #     print(self.last_image.min(), self.last_image.max())
+            # except:
+            #     pass
+            # print('histogram', min(h), max(h))
+            if ignore_zeros:
+                h = h[h > 0]
+            self.imv.setLevels(min(h), max(h))
+        except:
+            self.logger.warning("An exception occurred in do_auto_range()")
+        self.auto_range_timer.stop()
 
     def draw_target_pointer(self, locations):
         """gets an image and draws a circle around the target locations.

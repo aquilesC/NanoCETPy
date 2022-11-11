@@ -156,7 +156,6 @@ class SequentialMainWindow(QMainWindow, BaseView):
         msgBox.setWindowTitle("Initializing failed")
         msgBox.addButton('  Quit  ', QMessageBox.AcceptRole)
         button = msgBox.exec()
-        print(button)
         if button == QMessageBox.AcceptRole:
             self.close()
 
@@ -288,7 +287,7 @@ class FocusWidget(QWidget, BaseView):
         self.microscope_timer = QTimer()
         self.microscope_timer.timeout.connect(self.update_microscope_viewer)
 
-        self.experiment.focus_start() #Unset ROI also
+        self.experiment.live_microscope_view() #Unset ROI also
         self.ROI_button.clicked.connect(self.set_ROI)
         self.align_button.clicked.connect(self.start_alignment)
         self.continue_button.clicked.connect(self.parameters)
@@ -298,13 +297,13 @@ class FocusWidget(QWidget, BaseView):
         self.resized = False
         self.microscope_timer.start(50)
 
-        self.delayed_auto_range_timer = QTimer()
-
-        def delayed_single_auto_range():
-            self.microscope_viewer.do_auto_range()
-            self.delayed_auto_range_timer.stop()
-
-        self.delayed_auto_range_timer.timeout.connect(delayed_single_auto_range)
+        # self.delayed_auto_range_timer = QTimer()
+        #
+        # def delayed_single_auto_range():
+        #     self.microscope_viewer.do_auto_range()
+        #     self.delayed_auto_range_timer.stop()
+        #
+        # self.delayed_auto_range_timer.timeout.connect(delayed_single_auto_range)
 
     # def delayed_single_auto_range(self):
     #     self.microscope_viewer.do_auto_range()
@@ -320,19 +319,22 @@ class FocusWidget(QWidget, BaseView):
     def set_ROI(self):
         # Make sure to re-initialize the window (when moving through the software "non-linearly")
         if self.experiment.camera_microscope.ROI != self.experiment.config['camera_microscope']['config']['ROI']:
-            self.experiment.focus_start()
+            self.experiment.live_microscope_view()
         try:
             self.microscope_viewer.roi_box
             logger.info('Already displaying ROI box')
             return
         except:
             logger.info('Display ROI box')
-        height = self.experiment.config['defaults'].get('roi_width', 99)
+        height = int(np.round(self.experiment.config['defaults'].get('roi_width', 99)))
         center = self.experiment.identify_fiber_core_in_microscope(self.microscope_viewer.last_image)
-        self.microscope_viewer.setup_roi_box(np.ceil(center-height/2), int(height))
+        offset = int(np.ceil(center-(height-1)/2))
+        self.logger.info(f'Place ROI box around center: {center}, width: {height} -> offset: {offset}')
+        self.microscope_viewer.setup_roi_box(offset, height)
         self.align_button.setFlat(False)
         self.align_button.style().unpolish(self.align_button)
         self.align_button.style().polish(self.align_button)
+        self.microscope_viewer.auto_range_timer.start(500)
 
     def start_alignment(self):
         try:
@@ -342,8 +344,7 @@ class FocusWidget(QWidget, BaseView):
         self.status_signal.emit('Aligning laser to fiber center...')
         pos = self.microscope_viewer.roi_box.pos()
         size = self.microscope_viewer.roi_box.size()
-        print('ROI box pos and size:', pos, size)
-        self.experiment.focus_stop()
+        self.experiment.stop_microscope_view()
         time.sleep(0.1)  # used to be 1sec. why is a sleep needed?
         current_roi = self.experiment.camera_microscope.ROI
         self.experiment.camera_microscope.ROI = (current_roi[0], (int(pos[1]), int(size[1])))  # This assumes 2nd parameter is "length" and NOT endpoint
@@ -369,7 +370,8 @@ class FocusWidget(QWidget, BaseView):
     def check_alignment(self):
         logger.debug('Check alignment')
         if self.experiment._trigger_camera_auto_range:
-            self.delayed_auto_range_timer.start(100)
+            # self.delayed_auto_range_timer.start(100)
+            self.microscope_viewer.auto_range_timer.start(300)
             self.experiment._trigger_camera_auto_range = False
         if self.experiment.aligned:
             self.check_timer.stop()
@@ -382,14 +384,15 @@ class FocusWidget(QWidget, BaseView):
             if self.experiment.aligned == 'low scattering':
                 return_to_start = self.low_scattering_message()
             if return_to_start:
-                self.experiment.focus_start()
+                self.experiment.live_microscope_view()
                 self.align_button.setFlat(True)
                 self.continue_button.style().unpolish(self.continue_button)
                 self.continue_button.style().polish(self.continue_button)
-                self.delayed_auto_range_timer.start(400)
-
+                # self.delayed_auto_range_timer.start(300)
+                self.microscope_viewer.auto_range_timer.start(300)
                 return
-            self.delayed_auto_range_timer.start(400)
+            # self.delayed_auto_range_timer.start(300)
+            self.microscope_viewer.auto_range_timer.start(300)
             self.continue_button.setFlat(False)
             self.continue_button.style().unpolish(self.continue_button)
             self.continue_button.style().polish(self.continue_button)
@@ -448,21 +451,19 @@ class ParametersWidget(QWidget, BaseView):
         self.microscope_viewer.imv.setPredefinedGradient('thermal')
         self.microscope_timer = QTimer()
         self.microscope_timer.timeout.connect(self.update_microscope_viewer)
-
         self.name_line.setText(str(self.experiment.config['info']['files']['description']))
-        expt = self.experiment.config['camera_microscope']['config']['exposure']
-        if expt[-2:] == 'ms': expt = int(expt[:-2])
-        elif expt[-2:] == 'us': expt = int(expt[:-2]) * 0.001
-        self.exp_line.setText(str(expt))
-        self.gain_line.setText(str(self.experiment.config['camera_microscope']['config']['gain']))
-        self.laser_line.setText(str(self.experiment.config['electronics']['laser']['power']))
+        # Get the settings for the experiment (create the dict if it was not present yet in the config.
+        # Note that self.measurement_settings keeps referring to self.experiment.config['measurement_settings']
+        self.measurement_settings = self.experiment.config.setdefault(
+            'measurement_settings', {'laser_power': 99, 'exposure': '5ms', 'gain': 0.0})
+        self.laser_line.setText(str(self.measurement_settings['laser_power']))
+        self.exp_line.setText(str(Q_(self.measurement_settings['exposure']).m_as('ms')))
+        self.gain_line.setText(str(self.measurement_settings['gain']))
         self.name_line.editingFinished.connect(self.update_parameters)
         self.exp_line.editingFinished.connect(self.update_parameters)
         self.gain_line.editingFinished.connect(self.update_parameters)
         self.laser_line.editingFinished.connect(self.update_parameters)
-
         self.start_button.clicked.connect(self.start)
-
         self.resized = False
         self.microscope_timer.start(50)
         self.update_parameters()
@@ -475,14 +476,18 @@ class ParametersWidget(QWidget, BaseView):
             self.resized = True
 
     def update_parameters(self):
-        self.experiment.update_camera(self.experiment.camera_microscope, {
-            'exposure': Q_(self.exp_line.text()+'ms'),
-            'gain': float(self.gain_line.text()),
-        })
+        self.measurement_settings['exposure'] = str(Q_(self.exp_line.text() + 'ms'))
+        self.measurement_settings['gain'] = float(self.gain_line.text())
+        self.experiment.update_camera(self.experiment.camera_microscope,
+                    {k: v for (k, v) in self.measurement_settings.items() if k != 'laser_power'})
         self.experiment.config['info']['files'].update({
             'description': self.name_line.text()
         })
-        self.experiment.set_laser_power(int(self.laser_line.text()))
+        laser_power_requested = float(self.laser_line.text())
+        if laser_power_requested != self.measurement_settings['laser_power']:
+            self.measurement_settings['laser_power'] = laser_power_requested
+            self.experiment.set_laser_power(laser_power_requested)
+        self.microscope_viewer.auto_range_timer.start(int(self.experiment.camera_microscope.exposure.m_as('ms'))+150)
 
     def start(self):
         self.experiment.active = True
@@ -517,7 +522,9 @@ class MeasurementWidget(QWidget, BaseView):
 
         # self.experiment.reset_waterfall()
         self.stop_button.clicked.connect(self.stop_measurement)
-        self.resume_button.clicked.connect(self.resume_measurement)
+        self.resume_button.setVisible(False)
+        # self.resume_button.clicked.connect(self.resume_measurement)
+
         self.change_button.clicked.connect(self.parameters)
         #self.more_menu = QMenu(self.more_button)
         #self.more_menu.addAction('With same cartrigde', self.parameters)
@@ -546,19 +553,18 @@ class MeasurementWidget(QWidget, BaseView):
             self.helptext_label.setText(
                 f"Measurement ongoing"
                 f"\n\nData being saved to:\n"
-                f"{os.path.sep.join(filename_split[:-1])}{os.path.sep}"
+                # f"{os.path.sep.join(filename_split[:-1])}{os.path.sep}"
                 f"\n{filename_split[-1]}"
-                f"\n\nLaser power:\t{self.experiment.electronics.scattering_laser}"
-                f"\nExposure time:\t{self.experiment.camera_microscope.config['exposure']}"
-                f"\nGain:\t{self.experiment.camera_microscope.config['gain']}")
+                f"\n\nLaser power:  {self.experiment.electronics.scattering_laser} %"
+                f"\nExposure time:  {Q_(self.experiment.camera_microscope.config['exposure']).m_as('ms')} ms"
+                f"\nGain:  {self.experiment.camera_microscope.config['gain']}")
         else:
-
             self.helptext_label.setText(
                 f"Measurement finished"
                 f"\n\nData was saved to {newest}"
-                f"\n\nLaser power:\t{self.experiment.electronics.scattering_laser}"
-                f"\nExposure time:\t{self.experiment.camera_microscope.config['exposure']}"
-                f"\nGain:\t{self.experiment.camera_microscope.config['gain']}")
+                f"\n\nLaser power:  {self.experiment.electronics.scattering_laser} %"
+                f"\nExposure time:  {Q_(self.experiment.camera_microscope.config['exposure']).m_as('ms')} ms"
+                f"\nGain:  {self.experiment.camera_microscope.config['gain']}")
 
     def update_microscope_viewer(self):
         img = self.experiment.get_latest_image()
@@ -580,16 +586,14 @@ class MeasurementWidget(QWidget, BaseView):
         self.waterfall_viewer.imv.setLevels(*self.experiment.waterfall_image_limits)
 
     def stop_measurement(self):
-        if not self.experiment.saving: return
+        if not self.experiment.saving:
+            return
         self.experiment.active = False
         self.update_helptext_label()
 
         self.stop_button.setFlat(True)
         self.stop_button.style().unpolish(self.stop_button)
         self.stop_button.style().polish(self.stop_button)
-        self.resume_button.setFlat(False)
-        self.resume_button.style().unpolish(self.resume_button)
-        self.resume_button.style().polish(self.resume_button)
         self.change_button.setFlat(False)
         self.change_button.style().unpolish(self.change_button)
         self.change_button.style().polish(self.change_button)
@@ -597,6 +601,13 @@ class MeasurementWidget(QWidget, BaseView):
         self.quit_button.style().unpolish(self.quit_button)
         self.quit_button.style().polish(self.quit_button)
         self.experiment.electronics.state('paused')
+
+        # while self.experiment.saving_process is not None and self.experiment.saving_process.is_alive():
+        #     print('Saving process still alive')
+        #     time.sleep(.1)
+        self.resume_button.setFlat(False)
+        self.resume_button.style().unpolish(self.resume_button)
+        self.resume_button.style().polish(self.resume_button)
 
     def parameters(self):
         if self.experiment.saving: return
