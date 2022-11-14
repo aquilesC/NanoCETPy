@@ -2,21 +2,21 @@
     Modified Arduino model to accommodate peculiarities of NanoCET operation
 
 """
-
+from multiprocessing import Event
+from threading import RLock
+from experimentor.models.devices.base_device import ModelDevice
 import time
-
 import pyvisa
 from pyvisa import VisaIOError
-
-from NanoCETPy.dispertech.models.arduino import ArduinoModel
 from experimentor.lib.log import get_logger
 from experimentor.models import Feature
 from experimentor.models.decorators import make_async_thread
+from numpy import round
 
 rm = pyvisa.ResourceManager('@py')
 
 
-class ArduinoNanoCET(ArduinoModel):
+class ArduinoNanoCET(ModelDevice):
     """
     ArduinoModel with modified initialize routine to enable NanoCET software connection check screen
 
@@ -29,8 +29,22 @@ class ArduinoNanoCET(ArduinoModel):
     Additional getters and setters for laser and LEDs have been added as the query string was changed in the Arduino firmware.
     """
     def __init__(self, port=None, device=0, baud_rate=9600, initial_config=None):
-        super().__init__(port=port, device=device, baud_rate=baud_rate, initial_config=initial_config)
+        """ Use the port if you know where the Arduino is connected, or use the device number in the order shown by
+        pyvisa.
+        """
+        super().__init__()
         self.logger = get_logger(__name__)
+        self._threads = []
+        self._finalizing = False
+        self._stop_temperature = Event()
+        self.temp_electronics = 0
+        self.temp_sample = 0
+        self.query_lock = RLock()
+        self.driver = None
+        self.port = port
+        self.device = device
+        self.initial_config = initial_config
+        self.baud_rate = baud_rate
         self.initialized = False
         self.initializing = False
         self.led_states = {
@@ -51,10 +65,9 @@ class ArduinoNanoCET(ArduinoModel):
         self._top_led = 0
         self._fiber_led = 0
         self._side_led = 0
-        self._power_led = 0
+        self._power_led = 2  # Initial state set in the arduino code
         self._sample_led = 0
         self._measuring_led = 0
-        self.driver = None
 
     def serial_number(self):
         with self.query_lock:
@@ -125,7 +138,7 @@ class ArduinoNanoCET(ArduinoModel):
                 for port in device_ports:
                     try:
                         self.driver = rm.open_resource(port, baud_rate=115200)
-                        time.sleep(1)
+                        time.sleep(1.2)
                         self.driver.query('IDN')
                         if self.driver.query('IDN').startswith('Dispertech nanoCET FW 1.0'):
                             break
@@ -146,15 +159,16 @@ class ArduinoNanoCET(ArduinoModel):
                 try:
                     self.driver.read()
                 except VisaIOError:
-                    print('another error')
+                    self.logger.warning('An unexpected VisaIOError occured')
                     pass
             self.config.fetch_all()
-            print(self.driver.query('INI'))
+            self.logger.debug(f"INI response: {self.driver.query('INI')}")
             if self.initial_config is not None:
                 self.config.update(self.initial_config)
                 self.config.apply_all()
             self.initialized = True
             # self.logger.info('TEST arduino init done')
+            time.sleep(0.05)
             self.retrieve_factory_values()
 
     @Feature()
@@ -163,18 +177,18 @@ class ArduinoNanoCET(ArduinoModel):
 
         Parameters
         ----------
-        power : int
+        power : float
             Percentage of power (0-100)
         """
-        return self._scattering_laser_power
+        return round(self._scattering_laser_power * 100.0 / 4095.0, 2)
 
     @scattering_laser.setter
     def scattering_laser(self, power):
         with self.query_lock:
-            power = int(power * 4095 / 100)
+            power = int(round(power * 4095 / 100))
             self.driver.query(f'LASER:{power}')
             self.logger.info(f'LASER:{power}')
-            self._scattering_laser_power = int(power)
+            self._scattering_laser_power = power
 
     def move_piezo(self, speed, direction, axis):
         """ Moves the mirror connected to the board
@@ -279,6 +293,22 @@ class ArduinoNanoCET(ArduinoModel):
     def lid(self):
         with self.query_lock:
             return self.driver.query(f'LID').strip()
+
+    def finalize(self):
+        if self._finalizing:
+            self.logger.warning('Trying to finalize while already finalizing')
+            return
+        self._finalizing = True
+        self.logger.info('Finalizing Arduino')
+        if self.initial_config is not None:
+            self.config.update(self.initial_config)
+            self.config.apply_all()
+        self.scattering_laser = 0
+        self.fiber_led = 0
+        self.top_led = 0
+        self.state('standby')
+        self.driver.close()
+        super().finalize()
 
 
 if __name__ == '__main__':

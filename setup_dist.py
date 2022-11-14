@@ -55,6 +55,6 @@ setup(
     'pyqt5',
         ],
     executables=[
-        Executable("NanoCETPy/start_sequential.py"),
+        Executable("NanoCETPy/start.py"),
         ],
 )

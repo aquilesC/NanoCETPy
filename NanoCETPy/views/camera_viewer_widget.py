@@ -4,6 +4,8 @@ Camera Viewer Widget
 Wrapper around PyQtGraph ImageView.
 
 """
+import time
+
 import numpy as np
 import pyqtgraph as pg
 from PyQt5.QtCore import pyqtSignal, QRect, Qt, QTimer
@@ -43,9 +45,16 @@ class CameraViewerWidget(DataViewWidget):
         self.viewport = GraphicsLayoutWidget()
         self.view = self.viewport.addViewBox(lockAspect=False, enableMenu=True)
 
-        self.img = pg.ImageItem()
-        self.view.addItem(self.img)
-        self.imv = pg.ImageView(view=self.view, imageItem=self.img)
+        # self.img = pg.ImageItem()
+        # self.view.addItem(self.img)
+        # self.imv = pg.ImageView(view=self.view, imageItem=self.img)
+
+        self.imv = pg.ImageView(view=self.view)
+        self.img = self.imv.getImageItem()
+        # self.view = self.imv.getView()
+        # self.view.setAspectLocked(False)
+        # self.view.setMenuEnabled(False)
+
 
         self.imv.ui.roiBtn.hide()
         self.imv.ui.menuBtn.hide()
@@ -78,6 +87,12 @@ class CameraViewerWidget(DataViewWidget):
         self.add_actions_to_menu()
         self.setup_mouse_tracking()
 
+        # A timer to trigger a (single) delayed auto range event.
+        # Run as auto_range_timer.start(ms)
+        # Note that the timer is stopped by the auto range method (ensuring a single event)
+        self.auto_range_timer = QTimer()
+        self.auto_range_timer.timeout.connect(self.do_auto_range)
+
     def scene(self):
         """ Shortcut to getting the image scene"""
         return self.img.scene()
@@ -108,11 +123,11 @@ class CameraViewerWidget(DataViewWidget):
         else:
             self.logger.debug(f'No new image to update')
     
-    def setup_roi_box(self):
+    def setup_roi_box(self, offset=0, height=100):
         """ Setup a ROI box to drag over the fiber core in the sequential window
         """
         shape = self.last_image.shape
-        self.roi_box = pg.ROI((0,0), size=(shape[0], 100), pen={'color': "FF0", 'width': 4}, rotatable=False, maxBounds=QRect(0,-10,shape[0],100*shape[1]))
+        self.roi_box = pg.ROI((0, offset), size=(shape[0], height), pen={'color': "y", 'width': 4}, rotatable=False, maxBounds=QRect(0,0,shape[0],shape[1]))
         self.view.addItem(self.roi_box)
 
     def setup_roi_lines(self, max_size=None):
@@ -214,11 +229,19 @@ class CameraViewerWidget(DataViewWidget):
         """ Sets the levels of the image based on the maximum and minimum. This is useful when auto-levels are off
         (the default behavior), and one needs to quickly adapt the histogram.
         """
-
-        h, y = self.img.getHistogram()
-        if ignore_zeros:
-            h = h[h > 0]
-        self.imv.setLevels(min(h), max(h))
+        try:
+            h, y = self.img.getHistogram()
+            # try:
+            #     print(self.last_image.min(), self.last_image.max())
+            # except:
+            #     pass
+            # print('histogram', min(h), max(h))
+            if ignore_zeros:
+                h = h[h > 0]
+            self.imv.setLevels(min(h), max(h))
+        except:
+            self.logger.warning("An exception occurred in do_auto_range()")
+        self.auto_range_timer.stop()
 
     def draw_target_pointer(self, locations):
         """gets an image and draws a circle around the target locations.
