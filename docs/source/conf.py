@@ -8,13 +8,15 @@ import sys
 
 sys.path.insert(0, os.path.abspath('../../NanoCETPy'))
 
+import _version
+
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'NanoCETPy'
 copyright = 'Dispertech © 2022'
 author = 'Dispertech Authors. See AUTHORS for more information'
-release = '0.1'
+release = _version.__version__
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -39,4 +41,4 @@ todo_include_todos = True
 
 autoapi_type = 'python'
 autoapi_dirs = ['../../NanoCETPy']
-autoapi_options = [ 'members', 'undoc-members', 'show-inheritance', 'show-module-summary', 'special-members', 'imported-members']
+autoapi_options = ['members', 'undoc-members', 'show-inheritance', 'show-module-summary', 'special-members', 'imported-members']

@@ -21,7 +21,6 @@ Contents
 
    getting_started
    structure
-   sequential
    todo
    api
 
