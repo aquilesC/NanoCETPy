@@ -22,6 +22,5 @@ Contents
    getting_started
    structure
    todo
-   api
-
+   NanoCETPy/modules
 

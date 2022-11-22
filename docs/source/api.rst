@@ -5,4 +5,3 @@
    :toctree: generated
 
    NanoCETPy
-   NanoCETPy.sequential
