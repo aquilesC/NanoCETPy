@@ -178,4 +178,3 @@ dependencies:
   - zstd=1.4.9=h19a0ad4_0
   - pip:
     - pypylon==1.8.0
-prefix: C:\Users\Jakob\.conda\envs\disper
